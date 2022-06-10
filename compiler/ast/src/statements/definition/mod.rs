@@ -31,7 +31,7 @@ pub use declare::*;
 pub struct DefinitionStatement {
     /// What sort of declaration is this? `let` or `const`?.
     pub declaration_type: Declare,
-    /// The bindings / variable names to declare.
+    /// The variable to declare.
     pub variable_name: VariableName,
     /// The types of the bindings, if specified, or inferred otherwise.
     pub type_: Type,

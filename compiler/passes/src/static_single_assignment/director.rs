@@ -13,12 +13,3 @@
 
 // You should have received a copy of the GNU General Public License
 // along with the Leo library. If not, see <https://www.gnu.org/licenses/>.
-
-mod director;
-use director::*;
-
-pub mod name_table;
-pub use name_table::*;
-
-mod reduce;
-use reduce::*;
