@@ -227,19 +227,7 @@ impl ParserContext<'_> {
             _ => unreachable!("parse_definition_statement_ shouldn't produce this"),
         };
         // Parse variable names.
-        let variable_names = if self.peek_is_left_par() {
-            let vars = self
-                .parse_paren_comma_list(|p| p.parse_variable_name(decl_type, decl_span).map(Some))
-                .map(|(vars, ..)| vars)?;
-
-            if vars.len() == 1 {
-                self.emit_err(ParserError::invalid_parens_around_single_variable(vars[0].span()));
-            }
-
-            vars
-        } else {
-            vec![self.parse_variable_name(decl_type, decl_span)?]
-        };
+        let variable_name = self.parse_variable_name(decl_type, decl_span)?;
 
         self.expect(&Token::Colon)?;
         let type_ = self.parse_all_types()?;
@@ -251,7 +239,7 @@ impl ParserContext<'_> {
         Ok(DefinitionStatement {
             span: decl_span + expr.span(),
             declaration_type: decl_type,
-            variable_names,
+            variable_name,
             type_: type_.0,
             value: expr,
         })

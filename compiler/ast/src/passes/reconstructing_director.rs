@@ -145,16 +145,13 @@ impl<R: ReconstructingReducer> ReconstructingDirector<R> {
     }
 
     pub fn reduce_definition(&mut self, definition: &DefinitionStatement) -> Result<DefinitionStatement> {
-        let mut variable_names = vec![];
-        for variable_name in definition.variable_names.iter() {
-            variable_names.push(self.reduce_variable_name(variable_name)?);
-        }
+        let variable_name = self.reduce_variable_name(&definition.variable_name)?;
 
         let type_ = self.reduce_type(&definition.type_, &definition.span)?;
 
         let value = self.reduce_expression(&definition.value)?;
 
-        self.reducer.reduce_definition(definition, variable_names, type_, value)
+        self.reducer.reduce_definition(definition, variable_name, type_, value)
     }
 
     pub fn reduce_assignee_access(&mut self, access: &AssigneeAccess) -> Result<AssigneeAccess> {

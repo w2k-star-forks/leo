@@ -32,7 +32,7 @@ pub struct DefinitionStatement {
     /// What sort of declaration is this? `let` or `const`?.
     pub declaration_type: Declare,
     /// The bindings / variable names to declare.
-    pub variable_names: Vec<VariableName>,
+    pub variable_name: VariableName,
     /// The types of the bindings, if specified, or inferred otherwise.
     pub type_: Type,
     /// An initializer value for the bindings.
@@ -44,21 +44,7 @@ pub struct DefinitionStatement {
 impl fmt::Display for DefinitionStatement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} ", self.declaration_type)?;
-        if self.variable_names.len() == 1 {
-            // mut a
-            write!(f, "{}", self.variable_names[0])?;
-        } else {
-            // (a, mut b)
-            let names = self
-                .variable_names
-                .iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<_>>()
-                .join(",");
-
-            write!(f, "({})", names)?;
-        }
-
+        write!(f, "{}", self.variable_name)?;
         write!(f, ": {}", self.type_)?;
         write!(f, " = {};", self.value)
     }

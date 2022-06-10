@@ -43,22 +43,20 @@ impl<'a> StatementVisitorDirector<'a> for Director<'a> {
             Declaration::Mut
         };
 
-        input.variable_names.iter().for_each(|v| {
-            self.visitor.validate_ident_type(&Some(input.type_));
+        self.visitor.validate_ident_type(&Some(input.type_));
 
-            self.visit_expression(&input.value, &Some(input.type_));
+        self.visit_expression(&input.value, &Some(input.type_));
 
-            if let Err(err) = self.visitor.symbol_table.insert_variable(
-                v.identifier.name,
-                VariableSymbol {
-                    type_: &input.type_,
-                    span: input.span(),
-                    declaration: declaration.clone(),
-                },
-            ) {
-                self.visitor.handler.emit_err(err);
-            }
-        });
+        if let Err(err) = self.visitor.symbol_table.insert_variable(
+            input.variable_name.identifier.name,
+            VariableSymbol {
+                type_: &input.type_,
+                span: input.span(),
+                declaration: declaration.clone(),
+            },
+        ) {
+            self.visitor.handler.emit_err(err);
+        }
     }
 
     fn visit_assign(&mut self, input: &'a AssignStatement) {
