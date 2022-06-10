@@ -22,7 +22,10 @@ use indexmap::IndexMap;
 /// While similar in functionality to `SymbolTable`, `NameTable` expresses parent relationships based on control flow whereas `SymbolTable` expresses them based on scope.
 // Developer Note:
 //   - The design of this struct relies on the assumption that the only control structures in the AST (when converting to SSA) are `ConditionalStatement`s.
-//   - Consequently, the control-flow-graph is a tree. If this assumption changes, `NameTable` may need to be redesigned.
+//     Consequently, the control-flow-graph is a tree. If this assumption changes, `NameTable` may need to be redesigned.
+//   - `NameTable` implicitly encodes possible paths between a basic block and the source node in the control-flow-graph.
+//     However, it omits some control-flow information as it is not necessary to compute the SSA form.
+//     If the above assumption on control structures changes, consider an explicit representation of control-flow-graph.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct NameTable {
     /// Basic blocks that control-flow must pass through before reaching this one.
