@@ -27,17 +27,13 @@ use indexmap::IndexMap;
 
 // TODO: Needs documentation.
 
-// Needed to fix clippy bug.
-#[allow(clippy::redundant_closure)]
-pub trait ReconstructingReducer {
-    fn in_circuit(&self) -> bool;
-    fn swap_in_circuit(&mut self);
-
+pub trait TypeReducer {
     fn reduce_type(&mut self, _type_: &Type, new: Type, _span: &Span) -> Result<Type> {
         Ok(new)
     }
+}
 
-    // Expressions
+pub trait ExpressionReducer {
     fn reduce_expression(&mut self, _expression: &Expression, new: Expression) -> Result<Expression> {
         Ok(new)
     }
@@ -124,8 +120,9 @@ pub trait ReconstructingReducer {
             span: call.span,
         })
     }
+}
 
-    // Statements
+pub trait StatementReducer {
     fn reduce_statement(&mut self, _statement: &Statement, new: Statement) -> Result<Statement> {
         Ok(new)
     }
@@ -240,9 +237,9 @@ pub trait ReconstructingReducer {
             span: block.span,
         })
     }
+}
 
-    #[allow(clippy::too_many_arguments)]
-    // Program
+pub trait ProgramReducer {
     fn reduce_program(
         &mut self,
         program: &Program,
