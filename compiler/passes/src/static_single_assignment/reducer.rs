@@ -14,34 +14,90 @@
 // You should have received a copy of the GNU General Public License
 // along with the Leo library. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::NameTable;
+use crate::RenameTable;
 
 use leo_ast::{
-    AssignOperation, AssignStatement, Assignee, BinaryExpression, BinaryOperation, Block, Expression, Identifier, Node,
-    ReconstructingReducer, Statement,
+    AssignOperation, AssignStatement, Assignee, BinaryExpression, BinaryOperation, Block, Expression,
+    ExpressionReducer, Identifier, Node, ProgramReducer, Statement, StatementReducer, TypeReducer,
 };
 use leo_errors::Result;
 use leo_span::{Span, Symbol};
 
-struct ReduceToSSAForm {
-    name_table: NameTable,
+pub(crate) struct StaticSingleAssignmentReducer {
+    /// The `RenameTable` for the current basic block in the AST
+    pub(crate) rename_table: RenameTable,
     /// A strictly increasing counter, used to ensure that new variable names are unique.
-    // Developer Note:
-    //   - Using a single counter for variable renaming will produce a program that may be visually difficult to read.
-    //     While this has no impact on code generation, if preferred, one can maintain a counter for each variable in the source code, at the expense of code complexity.
-    counter: usize,
+    pub(crate) counter: usize,
+    /// A flag to determine whether or not the traversal is on the left-hand side of a definition or an assignment.
+    pub(crate) is_lhs: bool,
+    /// Phi functions produced by static single assignment.
+    pub(crate) phi_functions: Vec<Statement>,
 }
 
-impl ReconstructingReducer for ReduceToSSAForm {
-    fn in_circuit(&self) -> bool {
-        // Always default to false since `circuit` is not supported in Leo programs.
-        false
+impl StaticSingleAssignmentReducer {
+    /// Returns the value of `self.counter`. Increments the counter by 1, ensuring that all invocations of this function return a unique value.
+    pub fn get_unique_id(&mut self) -> usize {
+        self.counter += 1;
+        self.counter - 1
     }
 
-    fn swap_in_circuit(&mut self) {
-        // Do nothing since `circuit` is not supported in Leo programs.
+    /// Clears the `self.phi_functions`, returning the ones that were previously produced.
+    pub fn clear_phi_functions(&mut self) -> Vec<Statement> {
+        core::mem::take(&mut self.phi_functions)
     }
 
+    /// Pushes a new scope for a child basic block.
+    pub fn push(&mut self) {
+        let parent_table = core::mem::take(&mut self.rename_table);
+        self.rename_table = RenameTable {
+            parent: Some(Box::from(parent_table)),
+            mapping: Default::default(),
+        };
+    }
+
+    /// If the RenameTable has a parent, then `self.rename_table` is set to the parent, otherwise it is set to a default `RenameTable`.
+    pub fn pop(&mut self) -> RenameTable {
+        let parent = self.rename_table.parent.clone().unwrap();
+        let child_table = core::mem::replace(&mut self.rename_table, *parent);
+
+        child_table
+    }
+}
+
+impl TypeReducer for StaticSingleAssignmentReducer {}
+
+impl ExpressionReducer for StaticSingleAssignmentReducer {
+    /// Produces a new `Identifier` with a unique name.
+    /// If this function is invoked on the left-hand side of a definition or assignment, a new unique name is introduced.
+    /// Otherwise, we look up the previous name in the `RenameTable`.
+    fn reduce_identifier(&mut self, identifier: &Identifier) -> Result<Identifier> {
+        match self.is_lhs {
+            true => {
+                let new_name = Symbol::intern(&format!("{}${}", identifier.name, self.get_unique_id()));
+                self.rename_table.update(identifier.name, new_name.clone());
+                Ok(Identifier {
+                    name: new_name,
+                    span: identifier.span,
+                })
+            }
+            false => {
+                match self.rename_table.lookup(&identifier.name) {
+                    // TODO: Better error.
+                    None => panic!(
+                        "Error: A unique name for the variable {} is not defined.",
+                        identifier.name
+                    ),
+                    Some(name) => Ok(Identifier {
+                        name: name.clone(),
+                        span: identifier.span,
+                    }),
+                }
+            }
+        }
+    }
+}
+
+impl StatementReducer for StaticSingleAssignmentReducer {
     /// Reduce all `AssignStatement`s to simple `AssignStatement`s.
     /// For example,
     ///   `x += y * 3` becomes `x = x + (y * 3)`
@@ -124,8 +180,7 @@ impl ReconstructingReducer for ReduceToSSAForm {
                         Expression::Identifier(..) | Expression::Value(..) => new_statements.push(statement),
                         Expression::Binary(..) | Expression::Unary(..) | Expression::Ternary(..) => {
                             // Create a fresh variable name for the condition.
-                            let symbol_string = format!("cond${}", self.counter);
-                            self.counter += 1;
+                            let symbol_string = format!("cond${}", self.get_unique_id());
 
                             // Initialize a new `AssignStatement` for the condition.
                             let assignee = Assignee {
@@ -154,3 +209,5 @@ impl ReconstructingReducer for ReduceToSSAForm {
         })
     }
 }
+
+impl ProgramReducer for StaticSingleAssignmentReducer {}

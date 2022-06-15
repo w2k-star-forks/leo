@@ -153,7 +153,8 @@ pub trait StatementReducerDirector: ReducerDirector + ExpressionReducerDirector 
 
         let value = self.reduce_expression(&definition.value)?;
 
-        self.reducer_ref().reduce_definition(definition, variable_name, type_, value)
+        self.reducer_ref()
+            .reduce_definition(definition, variable_name, type_, value)
     }
 
     fn reduce_assignee_access(&mut self, access: &AssigneeAccess) -> Result<AssigneeAccess> {
@@ -199,7 +200,8 @@ pub trait StatementReducerDirector: ReducerDirector + ExpressionReducerDirector 
             .map(|condition| self.reduce_statement(condition))
             .transpose()?;
 
-        self.reducer_ref().reduce_conditional(conditional, condition, block, next)
+        self.reducer_ref()
+            .reduce_conditional(conditional, condition, block, next)
     }
 
     fn reduce_iteration(&mut self, iteration: &IterationStatement) -> Result<IterationStatement> {
@@ -249,7 +251,9 @@ pub trait StatementReducerDirector: ReducerDirector + ExpressionReducerDirector 
     }
 }
 
-pub trait ProgramReducerDirector: ReducerDirector + ExpressionReducerDirector + StatementReducerDirector + TypeReducerDirector {
+pub trait ProgramReducerDirector:
+    ReducerDirector + ExpressionReducerDirector + StatementReducerDirector + TypeReducerDirector
+{
     fn reduce_program(&mut self, program: &Program) -> Result<Program> {
         let mut inputs = vec![];
         for input in program.expected_input.iter() {
@@ -264,14 +268,12 @@ pub trait ProgramReducerDirector: ReducerDirector + ExpressionReducerDirector + 
         self.reducer_ref().reduce_program(program, inputs, functions)
     }
 
-    fn reduce_function_input_variable(
-        &mut self,
-        variable: &FunctionInputVariable,
-    ) -> Result<FunctionInputVariable> {
+    fn reduce_function_input_variable(&mut self, variable: &FunctionInputVariable) -> Result<FunctionInputVariable> {
         let identifier = self.reduce_identifier(&variable.identifier)?;
         let type_ = self.reduce_type(&variable.type_, &variable.span)?;
 
-        self.reducer_ref().reduce_function_input_variable(variable, identifier, type_)
+        self.reducer_ref()
+            .reduce_function_input_variable(variable, identifier, type_)
     }
 
     fn reduce_function_input(&mut self, input: &FunctionInput) -> Result<FunctionInput> {

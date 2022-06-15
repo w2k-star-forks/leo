@@ -17,8 +17,8 @@
 mod director;
 use director::*;
 
-pub mod name_table;
-pub use name_table::*;
+pub mod reducer;
+pub use reducer::*;
 
-mod reduce;
-use reduce::*;
+pub mod rename_table;
+pub use rename_table::*;
