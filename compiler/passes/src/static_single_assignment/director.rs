@@ -16,11 +16,7 @@
 
 use crate::{StaticSingleAssignmentReducer, SymbolTable};
 
-use leo_ast::{
-    AssignOperation, AssignStatement, Assignee, Block, ConditionalStatement, DefinitionStatement, Expression,
-    ExpressionReducerDirector, Function, Identifier, ProgramReducer, ProgramReducerDirector, ReducerDirector,
-    Statement, StatementReducer, StatementReducerDirector, TernaryExpression, TypeReducerDirector,
-};
+use leo_ast::{AssignOperation, AssignStatement, Assignee, Block, ConditionalStatement, DefinitionStatement, Expression, ExpressionReducerDirector, Function, Identifier, ProgramReducer, ProgramReducerDirector, ReducerDirector, Statement, StatementReducer, StatementReducerDirector, TernaryExpression, TypeReducerDirector, FunctionInput};
 use leo_errors::Result;
 
 use indexmap::IndexSet;
@@ -176,14 +172,25 @@ impl<'a> ProgramReducerDirector for Director<'a> {
         // Allocate a `RenameTable` for the function.
         self.reducer.push();
 
-        let identifier = self.reduce_identifier(&function.identifier)?;
+        // There is no need to reduce `function.identifier`.
+        let identifier = function.identifier.clone();
 
-        let mut inputs = vec![];
-        for input in function.input.iter() {
-            inputs.push(self.reduce_function_input(input)?);
+        // There is no need to reduce `function.inputs`.
+        // However, for each input, we must add each symbol to the rename table.
+        let inputs = function.input.clone();
+        for input in inputs.iter() {
+            match input {
+                FunctionInput::Variable(function_input_variable) => {
+                    self.reducer.rename_table.update(
+                        function_input_variable.identifier.name.clone(),
+                        function_input_variable.identifier.name.clone(),
+                    );
+                }
+            }
         }
 
-        let output = self.reduce_type(&function.output, &function.span)?;
+        // There is no need to reduce `function.output`.
+        let output = function.output.clone();
 
         let block = self.reduce_block(&function.block)?;
 
