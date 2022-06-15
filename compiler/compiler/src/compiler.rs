@@ -158,11 +158,19 @@ impl<'a> Compiler<'a> {
     }
 
     ///
+    /// Runs the static single assignment pass.
+    ///
+    pub fn static_single_assignment_pass(&'a self, symbol_table: &mut SymbolTable<'_>) -> Result<Ast> {
+        StaticSingleAssignmentReducer::do_pass((&self.ast, &mut symbol_table.clone(), self.handler))
+    }
+
+    ///
     /// Runs the compiler stages.
     ///
     pub fn compiler_stages(&self) -> Result<SymbolTable<'_>> {
         let mut st = self.symbol_table_pass()?;
         self.type_checker_pass(&mut st)?;
+        self.static_single_assignment_pass(&mut st)?;
         Ok(st)
     }
 

@@ -14,16 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with the Leo library. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::RenameTable;
+use crate::{RenameTable, SymbolTable};
+use std::marker::PhantomData;
 
 use leo_ast::{
     AssignOperation, AssignStatement, Assignee, BinaryExpression, BinaryOperation, Block, Expression,
     ExpressionReducer, Identifier, Node, ProgramReducer, Statement, StatementReducer, TypeReducer,
 };
+use leo_errors::emitter::Handler;
 use leo_errors::Result;
 use leo_span::{Span, Symbol};
 
-pub(crate) struct StaticSingleAssignmentReducer {
+pub struct StaticSingleAssignmentReducer<'a> {
     /// The `RenameTable` for the current basic block in the AST
     pub(crate) rename_table: RenameTable,
     /// A strictly increasing counter, used to ensure that new variable names are unique.
@@ -32,22 +34,35 @@ pub(crate) struct StaticSingleAssignmentReducer {
     pub(crate) is_lhs: bool,
     /// Phi functions produced by static single assignment.
     pub(crate) phi_functions: Vec<Statement>,
+    phantom: PhantomData<&'a ()>,
 }
 
-impl StaticSingleAssignmentReducer {
+impl<'a> StaticSingleAssignmentReducer<'a> {
+    // Note: This implementation of `Director` does not use `symbol_table` and `handler`.
+    // It may later become necessary as we iterate on the design.
+    pub(crate) fn new(_symbol_table: &'a mut SymbolTable, _handler: &'a Handler) -> Self {
+        Self {
+            rename_table: RenameTable::new(None),
+            counter: 0,
+            is_lhs: false,
+            phi_functions: Vec::new(),
+            phantom: Default::default(),
+        }
+    }
+
     /// Returns the value of `self.counter`. Increments the counter by 1, ensuring that all invocations of this function return a unique value.
-    pub fn get_unique_id(&mut self) -> usize {
+    pub(crate) fn get_unique_id(&mut self) -> usize {
         self.counter += 1;
         self.counter - 1
     }
 
     /// Clears the `self.phi_functions`, returning the ones that were previously produced.
-    pub fn clear_phi_functions(&mut self) -> Vec<Statement> {
+    pub(crate) fn clear_phi_functions(&mut self) -> Vec<Statement> {
         core::mem::take(&mut self.phi_functions)
     }
 
     /// Pushes a new scope for a child basic block.
-    pub fn push(&mut self) {
+    pub(crate) fn push(&mut self) {
         let parent_table = core::mem::take(&mut self.rename_table);
         self.rename_table = RenameTable {
             parent: Some(Box::from(parent_table)),
@@ -56,7 +71,7 @@ impl StaticSingleAssignmentReducer {
     }
 
     /// If the RenameTable has a parent, then `self.rename_table` is set to the parent, otherwise it is set to a default `RenameTable`.
-    pub fn pop(&mut self) -> RenameTable {
+    pub(crate) fn pop(&mut self) -> RenameTable {
         let parent = self.rename_table.parent.clone().unwrap();
         let child_table = core::mem::replace(&mut self.rename_table, *parent);
 
@@ -64,9 +79,9 @@ impl StaticSingleAssignmentReducer {
     }
 }
 
-impl TypeReducer for StaticSingleAssignmentReducer {}
+impl<'a> TypeReducer for StaticSingleAssignmentReducer<'a> {}
 
-impl ExpressionReducer for StaticSingleAssignmentReducer {
+impl<'a> ExpressionReducer for StaticSingleAssignmentReducer<'a> {
     /// Produces a new `Identifier` with a unique name.
     /// If this function is invoked on the left-hand side of a definition or assignment, a new unique name is introduced.
     /// Otherwise, we look up the previous name in the `RenameTable`.
@@ -97,7 +112,7 @@ impl ExpressionReducer for StaticSingleAssignmentReducer {
     }
 }
 
-impl StatementReducer for StaticSingleAssignmentReducer {
+impl<'a> StatementReducer for StaticSingleAssignmentReducer<'a> {
     /// Reduce all `AssignStatement`s to simple `AssignStatement`s.
     /// For example,
     ///   `x += y * 3` becomes `x = x + (y * 3)`
@@ -210,4 +225,4 @@ impl StatementReducer for StaticSingleAssignmentReducer {
     }
 }
 
-impl ProgramReducer for StaticSingleAssignmentReducer {}
+impl<'a> ProgramReducer for StaticSingleAssignmentReducer<'a> {}

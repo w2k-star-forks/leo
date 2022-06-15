@@ -30,18 +30,26 @@ pub(crate) struct RenameTable {
 }
 
 impl RenameTable {
+    /// Create a new `RenameTable` with the given parent.
+    pub(crate) fn new(parent: Option<Box<RenameTable>>) -> Self {
+        Self {
+            parent,
+            mapping: IndexMap::new(),
+        }
+    }
+
     /// Returns the symbols that were renamed in the current basic block.
-    pub fn get_local_names(&self) -> Vec<&Symbol> {
+    pub(crate) fn get_local_names(&self) -> Vec<&Symbol> {
         self.mapping.keys().collect()
     }
 
     /// Updates `self.mapping` with the desired entry. Creates a new entry if `symbol` is not already in `self.mapping`.
-    pub fn update(&mut self, symbol: Symbol, new_symbol: Symbol) {
+    pub(crate) fn update(&mut self, symbol: Symbol, new_symbol: Symbol) {
         self.mapping.insert(symbol, new_symbol);
     }
 
     /// Looks up the new name for `symbol`, recursively checking the parent if it is not found.
-    pub fn lookup(&self, symbol: &Symbol) -> Option<&Symbol> {
+    pub(crate) fn lookup(&self, symbol: &Symbol) -> Option<&Symbol> {
         if let Some(var) = self.mapping.get(symbol) {
             Some(var)
         } else if let Some(parent) = &self.parent {

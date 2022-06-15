@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with the Leo library. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::StaticSingleAssignmentReducer;
+use crate::{StaticSingleAssignmentReducer, SymbolTable};
 
 use leo_ast::{
     AssignOperation, AssignStatement, Assignee, Block, ConditionalStatement, DefinitionStatement, Expression,
@@ -24,14 +24,25 @@ use leo_ast::{
 use leo_errors::Result;
 
 use indexmap::IndexSet;
+use leo_errors::emitter::Handler;
 use leo_span::Symbol;
 
-pub(crate) struct Director {
-    reducer: StaticSingleAssignmentReducer,
+pub(crate) struct Director<'a> {
+    reducer: StaticSingleAssignmentReducer<'a>,
 }
 
-impl ReducerDirector for Director {
-    type Reducer = StaticSingleAssignmentReducer;
+impl<'a> Director<'a> {
+    // Note: This implementation of `Director` does not use `symbol_table` and `handler`.
+    // It may later become necessary as we iterate on the design.
+    pub(crate) fn new(symbol_table: &'a mut SymbolTable<'a>, handler: &'a Handler) -> Self {
+        Self {
+            reducer: StaticSingleAssignmentReducer::new(symbol_table, handler),
+        }
+    }
+}
+
+impl<'a> ReducerDirector for Director<'a> {
+    type Reducer = StaticSingleAssignmentReducer<'a>;
 
     fn reducer(self) -> Self::Reducer {
         self.reducer
@@ -42,11 +53,11 @@ impl ReducerDirector for Director {
     }
 }
 
-impl TypeReducerDirector for Director {}
+impl<'a> TypeReducerDirector for Director<'a> {}
 
-impl ExpressionReducerDirector for Director {}
+impl<'a> ExpressionReducerDirector for Director<'a> {}
 
-impl StatementReducerDirector for Director {
+impl<'a> StatementReducerDirector for Director<'a> {
     /// Reduces the `DefinitionStatement`, setting `is_lhs` as appropriate.
     fn reduce_definition(&mut self, definition: &DefinitionStatement) -> Result<DefinitionStatement> {
         self.reducer.is_lhs = true;
@@ -159,7 +170,7 @@ impl StatementReducerDirector for Director {
     }
 }
 
-impl ProgramReducerDirector for Director {
+impl<'a> ProgramReducerDirector for Director<'a> {
     /// Reduces the `Function`s in the `Program`, while allocating the appropriate `RenameTable`s.
     fn reduce_function(&mut self, function: &Function) -> Result<Function> {
         // Allocate a `RenameTable` for the function.
