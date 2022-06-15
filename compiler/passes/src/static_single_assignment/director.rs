@@ -16,7 +16,11 @@
 
 use crate::{StaticSingleAssignmentReducer, SymbolTable};
 
-use leo_ast::{AssignOperation, AssignStatement, Assignee, Block, ConditionalStatement, DefinitionStatement, Expression, ExpressionReducerDirector, Function, Identifier, ProgramReducer, ProgramReducerDirector, ReducerDirector, Statement, StatementReducer, StatementReducerDirector, TernaryExpression, TypeReducerDirector, FunctionInput};
+use leo_ast::{
+    AssignOperation, AssignStatement, Assignee, Block, ConditionalStatement, DefinitionStatement, Expression,
+    ExpressionReducerDirector, Function, FunctionInput, Identifier, ProgramReducer, ProgramReducerDirector,
+    ReducerDirector, Statement, StatementReducer, StatementReducerDirector, TernaryExpression, TypeReducerDirector,
+};
 use leo_errors::Result;
 
 use indexmap::IndexSet;
