@@ -28,7 +28,7 @@ use crate::{Pass, SymbolTable};
 use leo_ast::{Ast, ProgramReducerDirector};
 use leo_errors::{emitter::Handler, Result};
 
-impl<'a> Pass<'a> for StaticSingleAssignmentReducer<'a> {
+impl<'a> Pass for StaticSingleAssignmentReducer<'a> {
     type Input = (&'a Ast, &'a mut SymbolTable<'a>, &'a Handler);
     type Output = Result<Ast>;
 

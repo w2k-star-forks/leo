@@ -167,10 +167,11 @@ impl<'a> Compiler<'a> {
     ///
     /// Runs the compiler stages.
     ///
-    pub fn compiler_stages(&self) -> Result<SymbolTable<'_>> {
+    pub fn compiler_stages(&mut self) -> Result<SymbolTable<'_>> {
         let mut st = self.symbol_table_pass()?;
         self.type_checker_pass(&mut st)?;
-        self.static_single_assignment_pass(&mut st)?;
+        let _ssa_ast = self.static_single_assignment_pass(&mut st)?;
+
         Ok(st)
     }
 
