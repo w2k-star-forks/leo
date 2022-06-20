@@ -14,29 +14,32 @@
 // You should have received a copy of the GNU General Public License
 // along with the Leo library. If not, see <https://www.gnu.org/licenses/>.
 
-mod director;
-use director::*;
+use crate::FlattenConditionalStatements;
+use leo_ast::{
+    ExpressionReducerDirector, ProgramReducerDirector, ReducerDirector, StatementReducerDirector, TypeReducerDirector,
+};
 
-pub mod reducer;
-pub use reducer::*;
+#[derive(Default)]
+pub(crate) struct Director<'a> {
+    reducer: FlattenConditionalStatements<'a>,
+}
 
-mod rename_table;
-pub(crate) use rename_table::*;
+impl<'a> ReducerDirector for Director<'a> {
+    type Reducer = FlattenConditionalStatements<'a>;
 
-use crate::{Pass, SymbolTable};
+    fn reducer(self) -> Self::Reducer {
+        self.reducer
+    }
 
-use leo_ast::{Ast, ProgramReducerDirector};
-use leo_errors::{emitter::Handler, Result};
-
-impl<'a> Pass for StaticSingleAssignmentReducer<'a> {
-    type Input = (&'a Ast, &'a mut SymbolTable<'a>, &'a Handler);
-    type Output = Result<Ast>;
-
-    fn do_pass((ast, symbol_table, handler): Self::Input) -> Self::Output {
-        let mut visitor = Director::new(symbol_table, handler);
-        let program = visitor.reduce_program(ast.as_repr())?;
-        handler.last_err()?;
-
-        Ok(Ast::new(program))
+    fn reducer_ref(&mut self) -> &mut Self::Reducer {
+        &mut self.reducer
     }
 }
+
+impl<'a> TypeReducerDirector for Director<'a> {}
+
+impl<'a> ExpressionReducerDirector for Director<'a> {}
+
+impl<'a> StatementReducerDirector for Director<'a> {}
+
+impl<'a> ProgramReducerDirector for Director<'a> {}

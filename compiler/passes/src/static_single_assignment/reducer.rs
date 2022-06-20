@@ -15,7 +15,6 @@
 // along with the Leo library. If not, see <https://www.gnu.org/licenses/>.
 
 use crate::{RenameTable, SymbolTable};
-use std::marker::PhantomData;
 
 use leo_ast::{
     AssignOperation, AssignStatement, Assignee, BinaryExpression, BinaryOperation, Block, Expression,
@@ -24,6 +23,8 @@ use leo_ast::{
 use leo_errors::emitter::Handler;
 use leo_errors::Result;
 use leo_span::{Span, Symbol};
+
+use std::marker::PhantomData;
 
 pub struct StaticSingleAssignmentReducer<'a> {
     /// The `RenameTable` for the current basic block in the AST
