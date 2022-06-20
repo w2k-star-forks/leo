@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with the Leo library. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::{RenameTable, SymbolTable};
+use crate::RenameTable;
 
 use leo_ast::{
     AssignOperation, AssignStatement, Assignee, BinaryExpression, BinaryOperation, Block, Expression,
@@ -39,9 +39,9 @@ pub struct StaticSingleAssignmentReducer<'a> {
 }
 
 impl<'a> StaticSingleAssignmentReducer<'a> {
-    // Note: This implementation of `Director` does not use `symbol_table` and `handler`.
-    // It may later become necessary as we iterate on the design.
-    pub(crate) fn new(_symbol_table: &'a mut SymbolTable, _handler: &'a Handler) -> Self {
+    // Note: This implementation of `Director` does not use `handler`.
+    // It may later become necessary once we stabilize errors.
+    pub(crate) fn new(_handler: &'a Handler) -> Self {
         Self {
             rename_table: RenameTable::new(None),
             counter: 0,

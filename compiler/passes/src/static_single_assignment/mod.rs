@@ -23,17 +23,17 @@ pub use reducer::*;
 mod rename_table;
 pub(crate) use rename_table::*;
 
-use crate::{Pass, SymbolTable};
+use crate::Pass;
 
 use leo_ast::{Ast, ProgramReducerDirector};
 use leo_errors::{emitter::Handler, Result};
 
 impl<'a> Pass for StaticSingleAssignmentReducer<'a> {
-    type Input = (&'a Ast, &'a mut SymbolTable<'a>, &'a Handler);
+    type Input = (&'a Ast, &'a Handler);
     type Output = Result<Ast>;
 
-    fn do_pass((ast, symbol_table, handler): Self::Input) -> Self::Output {
-        let mut visitor = Director::new(symbol_table, handler);
+    fn do_pass((ast, handler): Self::Input) -> Self::Output {
+        let mut visitor = Director::new(handler);
         let program = visitor.reduce_program(ast.as_repr())?;
         handler.last_err()?;
 

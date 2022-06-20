@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with the Leo library. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::{StaticSingleAssignmentReducer, SymbolTable};
+use crate::StaticSingleAssignmentReducer;
 
 use leo_ast::{
     AssignOperation, AssignStatement, Assignee, Block, ConditionalStatement, DefinitionStatement, Expression,
@@ -34,9 +34,9 @@ pub(crate) struct Director<'a> {
 impl<'a> Director<'a> {
     // Note: This implementation of `Director` does not use `symbol_table` and `handler`.
     // It may later become necessary as we iterate on the design.
-    pub(crate) fn new(symbol_table: &'a mut SymbolTable<'a>, handler: &'a Handler) -> Self {
+    pub(crate) fn new(handler: &'a Handler) -> Self {
         Self {
-            reducer: StaticSingleAssignmentReducer::new(symbol_table, handler),
+            reducer: StaticSingleAssignmentReducer::new(handler),
         }
     }
 }

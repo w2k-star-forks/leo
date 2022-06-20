@@ -143,6 +143,8 @@ impl<'a> Compiler<'a> {
         Ok(())
     }
 
+    // TODO: Need to redesign the code below as it does not allow for the AST to be mutated.
+
     ///
     /// Runs the symbol table pass.
     ///
@@ -160,25 +162,38 @@ impl<'a> Compiler<'a> {
     ///
     /// Runs the static single assignment pass.
     ///
-    pub fn static_single_assignment_pass(&'a self, symbol_table: &mut SymbolTable<'_>) -> Result<Ast> {
-        StaticSingleAssignmentReducer::do_pass((&self.ast, &mut symbol_table.clone(), self.handler))
+    pub fn static_single_assignment_pass(&mut self) -> Result<()> {
+        self.ast = StaticSingleAssignmentReducer::do_pass((&self.ast, self.handler))?;
+        Ok(())
+    }
+
+    ///
+    /// Runs a compiler pass that flattens conditional statements.
+    ///
+    pub fn conditional_statement_flattening_pass(&mut self) -> Result<()> {
+        self.ast = FlattenConditionalStatements::do_pass(&self.ast)?;
+        Ok(())
     }
 
     ///
     /// Runs the compiler stages.
     ///
-    pub fn compiler_stages(&mut self) -> Result<SymbolTable<'_>> {
+    pub fn compiler_stages(&mut self) -> Result<()> {
         let mut st = self.symbol_table_pass()?;
-        self.type_checker_pass(&mut st)?;
-        let _ssa_ast = self.static_single_assignment_pass(&mut st)?;
 
-        Ok(st)
+        self.type_checker_pass(&mut st)?;
+
+        self.static_single_assignment_pass()?;
+
+        self.conditional_statement_flattening_pass()?;
+
+        Ok(())
     }
 
     ///
     /// Returns a compiled Leo program.
     ///
-    pub fn compile(&mut self) -> Result<SymbolTable<'_>> {
+    pub fn compile(&mut self) -> Result<()> {
         self.parse_program()?;
         self.compiler_stages()
     }
