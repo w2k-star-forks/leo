@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2021 Aleo Systems Inc.
+// Copyright (C) 2019-2022 Aleo Systems Inc.
 // This file is part of the Leo library.
 
 // The Leo library is free software: you can redistribute it and/or modify
@@ -14,32 +14,19 @@
 // You should have received a copy of the GNU General Public License
 // along with the Leo library. If not, see <https://www.gnu.org/licenses/>.
 
-#![doc = include_str!("../README.md")]
+pub mod director;
+pub use director::*;
 
-// Temporarily disable canonicalization.
-/* pub mod canonicalization;
-pub use canonicalization::*;
- */
+pub mod reducer;
+pub use reducer::*;
 
-// Temporarily disable import resolution
-// until we migrate core and then import resolution.
-/* pub mod import_resolution;
-pub use import_resolution::*; */
+use crate::Pass;
 
-pub mod dead_code_elimination;
-pub use dead_code_elimination::*;
+impl Pass for DeadCodeEliminator {
+    type Input = ();
+    type Output = ();
 
-pub mod flatten_conditionals;
-pub use flatten_conditionals::*;
-
-pub mod pass;
-pub use self::pass::*;
-
-pub mod static_single_assignment;
-pub use static_single_assignment::*;
-
-pub mod symbol_table;
-pub use symbol_table::*;
-
-pub mod type_checker;
-pub use type_checker::*;
+    fn do_pass(input: Self::Input) -> Self::Output {
+        todo!()
+    }
+}
