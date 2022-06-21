@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with the Leo library. If not, see <https://www.gnu.org/licenses/>.
 
-pub mod director;
+mod director;
 use director::*;
 
 pub mod reducer;
@@ -30,8 +30,8 @@ impl<'a> Pass for FlattenConditionalStatements<'a> {
     type Output = Result<Ast>;
 
     fn do_pass(ast: Self::Input) -> Self::Output {
-        let mut visitor = Director::default();
-        let program = visitor.reduce_program(ast.as_repr())?;
+        let mut director = Director::default();
+        let program = director.reduce_program(ast.as_repr())?;
 
         Ok(Ast::new(program))
     }

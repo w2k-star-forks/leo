@@ -24,12 +24,12 @@ use leo_ast::{
 use leo_errors::{AstError, Result};
 
 #[derive(Default)]
-pub(crate) struct Director {
-    reducer: DeadCodeEliminator,
+pub(crate) struct Director<'a> {
+    reducer: DeadCodeEliminator<'a>,
 }
 
-impl ReducerDirector for Director {
-    type Reducer = DeadCodeEliminator;
+impl<'a> ReducerDirector for Director<'a> {
+    type Reducer = DeadCodeEliminator<'a>;
 
     fn reducer(self) -> Self::Reducer {
         self.reducer
@@ -40,11 +40,11 @@ impl ReducerDirector for Director {
     }
 }
 
-impl TypeReducerDirector for Director {}
+impl<'a> TypeReducerDirector for Director<'a> {}
 
-impl ExpressionReducerDirector for Director {}
+impl<'a> ExpressionReducerDirector for Director<'a> {}
 
-impl StatementReducerDirector for Director {
+impl<'a> StatementReducerDirector for Director<'a> {
     /// Reduces a `ReturnStatement`. Note that all symbols in the expression of the `ReturnStatement` are critical.
     fn reduce_return(&mut self, return_statement: &ReturnStatement) -> Result<ReturnStatement> {
         self.reducer.set_critical();
@@ -134,4 +134,4 @@ impl StatementReducerDirector for Director {
     }
 }
 
-impl ProgramReducerDirector for Director {}
+impl<'a> ProgramReducerDirector for Director<'a> {}

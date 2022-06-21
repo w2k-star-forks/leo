@@ -16,18 +16,20 @@
 
 use leo_ast::{ExpressionReducer, Identifier, ProgramReducer, StatementReducer, TypeReducer};
 use leo_span::Symbol;
+use std::marker::PhantomData;
 
 use indexmap::IndexMap;
 
 #[derive(Debug, Default)]
-pub(crate) struct DeadCodeEliminator {
+pub struct DeadCodeEliminator<'a> {
     /// A mapping determining which symbols are marked.
     marked: IndexMap<Symbol, bool>,
     /// A flag that determines if we are traversing a portion of the AST that has an effect on output.
     is_critical: bool,
+    phantom: PhantomData<&'a ()>,
 }
 
-impl DeadCodeEliminator {
+impl<'a> DeadCodeEliminator<'a> {
     /// A function that returns whether or not a symbol is marked.
     /// If a symbol is marked, then it's declaration is not dead code.
     /// If a symbol is not marked, then it's declaration is dead code.
@@ -51,9 +53,9 @@ impl DeadCodeEliminator {
     }
 }
 
-impl TypeReducer for DeadCodeEliminator {}
+impl<'a> TypeReducer for DeadCodeEliminator<'a> {}
 
-impl ExpressionReducer for DeadCodeEliminator {
+impl<'a> ExpressionReducer for DeadCodeEliminator<'a> {
     /// This function reduces an `Identifier` expression and marks the associated symbol if necessary.
     fn reduce_identifier(&mut self, identifier: &Identifier) -> leo_errors::Result<Identifier> {
         // If we are in a critical component of the AST, then we should mark the symbol.
@@ -68,6 +70,6 @@ impl ExpressionReducer for DeadCodeEliminator {
     }
 }
 
-impl StatementReducer for DeadCodeEliminator {}
+impl<'a> StatementReducer for DeadCodeEliminator<'a> {}
 
-impl ProgramReducer for DeadCodeEliminator {}
+impl<'a> ProgramReducer for DeadCodeEliminator<'a> {}

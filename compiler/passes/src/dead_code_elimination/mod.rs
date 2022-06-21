@@ -14,19 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with the Leo library. If not, see <https://www.gnu.org/licenses/>.
 
-pub mod director;
-pub use director::*;
+mod director;
+use director::*;
 
 pub mod reducer;
 pub use reducer::*;
 
 use crate::Pass;
 
-impl Pass for DeadCodeEliminator {
-    type Input = ();
-    type Output = ();
+use leo_ast::{Ast, ProgramReducerDirector};
+use leo_errors::Result;
 
-    fn do_pass(input: Self::Input) -> Self::Output {
-        todo!()
+impl<'a> Pass for DeadCodeEliminator<'a> {
+    type Input = &'a Ast;
+    type Output = Result<Ast>;
+
+    fn do_pass(ast: Self::Input) -> Self::Output {
+        let mut director = Director::default();
+        let program = director.reduce_program(ast.as_repr())?;
+
+        Ok(Ast::new(program))
     }
 }

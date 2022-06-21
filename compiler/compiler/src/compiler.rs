@@ -176,6 +176,14 @@ impl<'a> Compiler<'a> {
     }
 
     ///
+    /// Runs the dead code elimination pass.
+    ///
+    pub fn dead_code_elimination_pass(&mut self) -> Result<()> {
+        self.ast = DeadCodeEliminator::do_pass(&self.ast)?;
+        Ok(())
+    }
+
+    ///
     /// Runs the compiler stages.
     ///
     pub fn compiler_stages(&mut self) -> Result<()> {
@@ -186,6 +194,8 @@ impl<'a> Compiler<'a> {
         self.static_single_assignment_pass()?;
 
         self.conditional_statement_flattening_pass()?;
+
+        self.dead_code_elimination_pass()?;
 
         Ok(())
     }
