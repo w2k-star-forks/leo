@@ -94,12 +94,7 @@ impl<'a> Compiler<'a> {
         let ast: leo_ast::Ast = leo_parser::parse_ast(self.handler, &prg_sf.src, prg_sf.start_pos)?;
 
         if self.output_options.ast_initial {
-            // Write the AST snapshot post parsing.
-            if self.output_options.spans_enabled {
-                ast.to_json_file(self.output_directory.clone(), "initial_ast.json")?;
-            } else {
-                ast.to_json_file_without_keys(self.output_directory.clone(), "initial_ast.json", &["span"])?;
-            }
+            self.write_ast_to_json("initial_ast.json")?;
         }
 
         self.ast = ast;
@@ -125,17 +120,9 @@ impl<'a> Compiler<'a> {
 
             // Parse and serialize it.
             let input_ast = leo_parser::parse_input(self.handler, &input_sf.src, input_sf.start_pos)?;
+
             if self.output_options.ast_initial {
-                // Write the input AST snapshot post parsing.
-                if self.output_options.spans_enabled {
-                    input_ast.to_json_file(self.output_directory.clone(), "initial_input_ast.json")?;
-                } else {
-                    input_ast.to_json_file_without_keys(
-                        self.output_directory.clone(),
-                        "initial_input_ast.json",
-                        &["span"],
-                    )?;
-                }
+                self.write_ast_to_json("initial_input_ast.json")?;
             }
 
             self.input_ast = Some(input_ast);
@@ -164,14 +151,7 @@ impl<'a> Compiler<'a> {
         self.ast = Flattener::do_pass((std::mem::take(&mut self.ast), self.handler, symbol_table))?;
 
         if self.output_options.ast_initial {
-            // Write the input AST snapshot post parsing.
-            if self.output_options.spans_enabled {
-                self.ast
-                    .to_json_file(self.output_directory.clone(), "flattened_ast.json")?;
-            } else {
-                self.ast
-                    .to_json_file_without_keys(self.output_directory.clone(), "flattened_ast.json", &["span"])?;
-            }
+            self.write_ast_to_json("flattened_ast.json")?;
         }
 
         Ok(())
@@ -182,14 +162,25 @@ impl<'a> Compiler<'a> {
     ///
     pub fn static_single_assignment_pass(&mut self) -> Result<()> {
         self.ast = StaticSingleAssignmentReducer::do_pass((&self.ast, self.handler))?;
+
+        if self.output_options.ssa_ast {
+            self.write_ast_to_json("ssa_ast.json")?;
+        }
+
         Ok(())
     }
 
+    // TODO: See if this pass can be integrated into the SSA or DCE pass.
     ///
     /// Runs a compiler pass that flattens conditional statements.
     ///
     pub fn conditional_statement_flattening_pass(&mut self) -> Result<()> {
         self.ast = FlattenConditionalStatements::do_pass(&self.ast)?;
+
+        if self.output_options.flattened_conditional_ast {
+            self.write_ast_to_json("flattened_conditional_ast.json")?;
+        }
+
         Ok(())
     }
 
@@ -198,6 +189,11 @@ impl<'a> Compiler<'a> {
     ///
     pub fn dead_code_elimination_pass(&mut self) -> Result<()> {
         self.ast = DeadCodeEliminator::do_pass(&self.ast)?;
+
+        if self.output_options.dead_code_eliminated_ast {
+            self.write_ast_to_json("dead_code_eliminated_ast.json")?;
+        }
+
         Ok(())
     }
 
@@ -226,5 +222,20 @@ impl<'a> Compiler<'a> {
     pub fn compile(&mut self) -> Result<()> {
         self.parse_program()?;
         self.compiler_stages()
+    }
+
+    ///
+    /// Writes the AST to a JSON file.
+    ///
+    fn write_ast_to_json(&self, file_name: &str) -> Result<()> {
+        // Write the input AST snapshot post parsing.
+        if self.output_options.spans_enabled {
+            self.ast
+                .to_json_file(self.output_directory.clone(), file_name)?;
+        } else {
+            self.ast
+                .to_json_file_without_keys(self.output_directory.clone(), file_name, &["span"])?;
+        }
+        Ok(())
     }
 }
