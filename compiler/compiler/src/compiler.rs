@@ -228,10 +228,9 @@ impl<'a> Compiler<'a> {
     /// Writes the AST to a JSON file.
     ///
     fn write_ast_to_json(&self, file_name: &str) -> Result<()> {
-        // Write the input AST snapshot post parsing.
+        // Remove `Span`s if they are not enabled.
         if self.output_options.spans_enabled {
-            self.ast
-                .to_json_file(self.output_directory.clone(), file_name)?;
+            self.ast.to_json_file(self.output_directory.clone(), file_name)?;
         } else {
             self.ast
                 .to_json_file_without_keys(self.output_directory.clone(), file_name, &["span"])?;
