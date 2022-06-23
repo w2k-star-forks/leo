@@ -14,27 +14,30 @@
 // You should have received a copy of the GNU General Public License
 // along with the Leo library. If not, see <https://www.gnu.org/licenses/>.
 
-mod director;
-use director::*;
+mod rename_expression;
 
-pub mod reducer;
-pub use reducer::*;
+mod rename_program;
+
+mod rename_statement;
 
 mod rename_table;
 pub(crate) use rename_table::*;
 
+mod static_single_assigner;
+pub(crate) use static_single_assigner::*;
+
 use crate::Pass;
 
-use leo_ast::{Ast, ProgramReducerDirector};
+use leo_ast::{Ast, ProgramReconstructor};
 use leo_errors::{emitter::Handler, Result};
 
-impl<'a> Pass for StaticSingleAssignmentReducer<'a> {
-    type Input = (&'a Ast, &'a Handler);
+impl<'a> Pass for StaticSingleAssigner<'a> {
+    type Input = (Ast, &'a Handler);
     type Output = Result<Ast>;
 
     fn do_pass((ast, handler): Self::Input) -> Self::Output {
-        let mut visitor = Director::new(handler);
-        let program = visitor.reduce_program(ast.as_repr())?;
+        let mut reconstructor = StaticSingleAssigner::new(handler);
+        let program = reconstructor.reconstruct_program(ast.into_repr());
         handler.last_err()?;
 
         Ok(Ast::new(program))
