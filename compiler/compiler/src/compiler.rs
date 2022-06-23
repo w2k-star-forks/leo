@@ -143,8 +143,6 @@ impl<'a> Compiler<'a> {
         Ok(())
     }
 
-    // TODO: Need to redesign the code below as it does not allow for the AST to be mutated.
-
     ///
     /// Runs the symbol table pass.
     ///

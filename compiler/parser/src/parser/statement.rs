@@ -206,7 +206,7 @@ impl ParserContext<'_> {
             Token::Const => Declare::Const,
             _ => unreachable!("parse_definition_statement_ shouldn't produce this"),
         };
-        // Parse variable names.
+        // Parse variable name.
         let variable_name = self.parse_variable_name(decl_type, decl_span)?;
 
         self.expect(&Token::Colon)?;
