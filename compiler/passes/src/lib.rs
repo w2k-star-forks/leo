@@ -29,8 +29,17 @@ pub use import_resolution::*; */
 pub mod flattening;
 pub use flattening::*;
 
+pub mod dead_code_elimination;
+pub use dead_code_elimination::*;
+
+pub mod flatten_conditionals;
+pub use flatten_conditionals::*;
+
 pub mod pass;
 pub use self::pass::*;
+
+pub mod static_single_assignment;
+pub use static_single_assignment::*;
 
 pub mod symbol_table;
 pub use symbol_table::*;

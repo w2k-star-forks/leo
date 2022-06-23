@@ -25,17 +25,15 @@ use leo_span::{Span, Symbol};
 
 use indexmap::IndexMap;
 
-// Needed to fix clippy bug.
-#[allow(clippy::redundant_closure)]
-pub trait ReconstructingReducer {
-    fn in_circuit(&self) -> bool;
-    fn swap_in_circuit(&mut self);
+// TODO: Needs documentation.
 
+pub trait TypeReducer {
     fn reduce_type(&mut self, _type_: &Type, new: Type, _span: &Span) -> Result<Type> {
         Ok(new)
     }
+}
 
-    // Expressions
+pub trait ExpressionReducer {
     fn reduce_expression(&mut self, _expression: &Expression, new: Expression) -> Result<Expression> {
         Ok(new)
     }
@@ -125,8 +123,9 @@ pub trait ReconstructingReducer {
             span: call.span,
         })
     }
+}
 
-    // Statements
+pub trait StatementReducer {
     fn reduce_statement(&mut self, _statement: &Statement, new: Statement) -> Result<Statement> {
         Ok(new)
     }
@@ -149,13 +148,13 @@ pub trait ReconstructingReducer {
     fn reduce_definition(
         &mut self,
         definition: &DefinitionStatement,
-        variable_names: Vec<VariableName>,
+        variable_name: VariableName,
         type_: Type,
         value: Expression,
     ) -> Result<DefinitionStatement> {
         Ok(DefinitionStatement {
             declaration_type: definition.declaration_type,
-            variable_names,
+            variable_name,
             type_,
             value,
             span: definition.span,
@@ -224,9 +223,9 @@ pub trait ReconstructingReducer {
             span: block.span,
         })
     }
+}
 
-    #[allow(clippy::too_many_arguments)]
-    // Program
+pub trait ProgramReducer {
     fn reduce_program(
         &mut self,
         program: &Program,
