@@ -18,10 +18,16 @@
 pub struct OutputOptions {
     /// Whether spans are enabled in the output ASTs.
     pub spans_enabled: bool,
-    /// If enabled writes the AST after parsing.
+    /// If enabled, write the AST after parsing.
     pub ast_initial: bool,
-    /// If enabled writes the input AST after parsing.
+    /// If enabled, write the input AST after parsing.
     pub input_ast_initial: bool,
-    /// If enabled writes the flattened AST after parsing.
+    /// If enabled, write the flattened AST after parsing.
     pub flattened_ast: bool,
+    /// If enabled, write the AST after it has been converted to SSA form.
+    pub ssa_ast: bool,
+    /// If enabled, write the AST after conditional statements have been flattened.
+    pub flattened_conditional_ast: bool,
+    /// If enabled, write the AST after dead code has been eliminated.
+    pub dead_code_eliminated_ast: bool,
 }
