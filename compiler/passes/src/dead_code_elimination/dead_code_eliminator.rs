@@ -14,11 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with the Leo library. If not, see <https://www.gnu.org/licenses/>.
 
-use leo_ast::{ExpressionReducer, Identifier, ProgramReducer, StatementReducer, TypeReducer};
 use leo_span::Symbol;
-use std::marker::PhantomData;
 
 use indexmap::IndexMap;
+use std::marker::PhantomData;
 
 #[derive(Debug, Default)]
 pub struct DeadCodeEliminator<'a> {
@@ -38,7 +37,7 @@ impl<'a> DeadCodeEliminator<'a> {
     }
 
     /// A function that marks a symbol.
-    fn mark(&mut self, symbol: Symbol) {
+    pub(crate) fn mark(&mut self, symbol: Symbol) {
         self.marked.insert(symbol, true);
     }
 
@@ -51,25 +50,9 @@ impl<'a> DeadCodeEliminator<'a> {
     pub(crate) fn unset_critical(&mut self) {
         self.is_critical = false
     }
-}
 
-impl<'a> TypeReducer for DeadCodeEliminator<'a> {}
-
-impl<'a> ExpressionReducer for DeadCodeEliminator<'a> {
-    /// This function reduces an `Identifier` expression and marks the associated symbol if necessary.
-    fn reduce_identifier(&mut self, identifier: &Identifier) -> leo_errors::Result<Identifier> {
-        // If we are in a critical component of the AST, then we should mark the symbol.
-        if self.is_critical {
-            self.mark(identifier.name);
-        }
-
-        Ok(Identifier {
-            name: identifier.name,
-            span: identifier.span,
-        })
+    /// Returns the status of the critical flag.
+    pub(crate) fn is_critical(&self) -> bool {
+        self.is_critical
     }
 }
-
-impl<'a> StatementReducer for DeadCodeEliminator<'a> {}
-
-impl<'a> ProgramReducer for DeadCodeEliminator<'a> {}

@@ -14,28 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with the Leo library. If not, see <https://www.gnu.org/licenses/>.
 
-pub mod dead_code_eliminator;
-pub use dead_code_eliminator::*;
+use crate::DeadCodeEliminator;
 
-mod eliminate_expression;
+use leo_ast::ProgramReconstructor;
 
-mod eliminate_program;
-
-mod eliminate_statement;
-
-use crate::Pass;
-
-use leo_ast::{Ast, ProgramReducerDirector};
-use leo_errors::Result;
-
-impl<'a> Pass for DeadCodeEliminator<'a> {
-    type Input = Ast;
-    type Output = Result<Ast>;
-
-    fn do_pass(ast: Self::Input) -> Self::Output {
-        let mut reconstructor = DeadCodeEliminator::default();
-        let program = reconstructor.reduce_program(ast.as_repr());
-
-        Ok(Ast::new(program))
-    }
-}
+impl<'a> ProgramReconstructor for DeadCodeEliminator<'a> {}
