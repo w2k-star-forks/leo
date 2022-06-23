@@ -39,19 +39,19 @@ pub enum AssignOperation {
     Or,
     /// Logical and assignment.
     And,
+    /// Bitwise or assignment.
+    BitOr,
+    /// Bitwise and assignment.
+    BitAnd,
+    /// Bitwise xor assignment.
+    BitXor,
+    /// Shift right assignment.
+    Shr,
+    /// Signed shift right assignment.
+    ShrSigned,
+    /// Shift left assignment.
+    Shl,
     // TODO: These should not be supported until `BinaryOperation` supports them.
-    // /// Bitwise or assignment.
-    // BitOr,
-    // /// Bitwise and assignment.
-    // BitAnd,
-    // /// Bitwise xor assignment.
-    // BitXor,
-    // /// Shift right assignment.
-    // Shr,
-    // /// Signed shift right assignment.
-    // ShrSigned,
-    // /// Shift left assignment.
-    // Shl,
     // /// Modulus / remainder assignment.
     // Mod,
 }
@@ -67,12 +67,12 @@ impl AsRef<str> for AssignOperation {
             AssignOperation::Pow => "**=",
             AssignOperation::Or => "||=",
             AssignOperation::And => "&&=",
-            // AssignOperation::BitOr => "|=",
-            // AssignOperation::BitAnd => "&=",
-            // AssignOperation::BitXor => "^=",
-            // AssignOperation::Shr => ">>=",
-            // AssignOperation::ShrSigned => ">>>=",
-            // AssignOperation::Shl => "<<=",
+            AssignOperation::BitOr => "|=",
+            AssignOperation::BitAnd => "&=",
+            AssignOperation::BitXor => "^=",
+            AssignOperation::Shr => ">>=",
+            AssignOperation::ShrSigned => ">>>=",
+            AssignOperation::Shl => "<<=",
             // AssignOperation::Mod => "%=",
         }
     }
