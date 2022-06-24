@@ -38,28 +38,26 @@ impl<'a> StatementReconstructor for Flattener<'a> {
         let mut st = self.symbol_table.borrow_mut();
 
         if let Some(const_val) = const_val.clone() {
-            input.variable_names.iter().for_each(|var| {
-                if !st.set_variable(&var.identifier.name, const_val.clone()) {
-                    if let Err(err) = st.insert_variable(
-                        var.identifier.name,
-                        VariableSymbol {
-                            type_: (&const_val).into(),
-                            span: var.identifier.span,
-                            declaration: match &input.declaration_type {
-                                Declare::Const => Declaration::Const(Some(const_val.clone())),
-                                Declare::Let => Declaration::Mut(Some(const_val.clone())),
-                            },
+            if !st.set_variable(&input.variable_name.identifier.name, const_val.clone()) {
+                if let Err(err) = st.insert_variable(
+                    input.variable_name.identifier.name,
+                    VariableSymbol {
+                        type_: (&const_val).into(),
+                        span: input.variable_name.identifier.span,
+                        declaration: match &input.declaration_type {
+                            Declare::Const => Declaration::Const(Some(const_val.clone())),
+                            Declare::Let => Declaration::Mut(Some(const_val.clone())),
                         },
-                    ) {
-                        self.handler.emit_err(err);
-                    }
+                    },
+                ) {
+                    self.handler.emit_err(err);
                 }
-            });
+            }
         }
 
         Statement::Definition(DefinitionStatement {
             declaration_type: input.declaration_type,
-            variable_names: input.variable_names.clone(),
+            variable_name: input.variable_name.clone(),
             type_: input.type_,
             value: map_const((value, const_val)),
             span: input.span,
