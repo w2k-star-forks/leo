@@ -30,7 +30,7 @@ use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::PathBuf;
 
-use crate::OutputOptions;
+use crate::CompilerOptions;
 
 /// The primary entry point of the Leo compiler.
 #[derive(Clone)]
@@ -46,7 +46,7 @@ pub struct Compiler<'a> {
     /// The input ast for the program if it exists.
     pub input_ast: Option<InputAst>,
     /// Compiler options on some optional output files.
-    output_options: OutputOptions,
+    output_options: CompilerOptions,
 }
 
 impl<'a> Compiler<'a> {
@@ -57,7 +57,7 @@ impl<'a> Compiler<'a> {
         handler: &'a Handler,
         main_file_path: PathBuf,
         output_directory: PathBuf,
-        output_options: Option<OutputOptions>,
+        output_options: Option<CompilerOptions>,
     ) -> Self {
         Self {
             handler,
@@ -195,8 +195,9 @@ impl<'a> Compiler<'a> {
 
         self.static_single_assignment_pass()?;
 
-        // TODO: Make this pass optional.
-        self.dead_code_elimination_pass()?;
+        if self.output_options.run_dead_code_elimination {
+            self.dead_code_elimination_pass()?;
+        }
 
         Ok(())
     }

@@ -15,7 +15,7 @@
 // along with the Leo library. If not, see <https://www.gnu.org/licenses/>.
 
 use crate::{commands::Command, context::Context};
-use leo_compiler::{Ast, Compiler, InputAst, OutputOptions};
+use leo_compiler::{Ast, Compiler, CompilerOptions, InputAst};
 use leo_errors::{CliError, Result};
 use leo_package::{
     inputs::InputFile,
@@ -32,6 +32,8 @@ use tracing::span::Span;
 /// require Build command output as their input.
 #[derive(StructOpt, Clone, Debug, Default)]
 pub struct BuildOptions {
+    #[clap(long, help = "Enables dead code elimination.")]
+    pub enable_dead_code_elimination: bool,
     #[clap(long, help = "Enable spans in AST snapshots.")]
     pub enable_spans: bool,
     #[clap(long, help = "Writes all AST snapshots for the different compiler phases.")]
@@ -44,15 +46,18 @@ pub struct BuildOptions {
     pub enable_flattened_ast_snapshot: bool,
     #[clap(long, help = "Writes AST snapshot after the static single assignment pass.")]
     pub enable_ssa_ast_snapshot: bool,
-    #[clap(long, help = "Writes AST snapshot after the conditional flattening pass.")]
-    pub enable_conditional_flattened_ast_snapshot: bool,
-    #[clap(long, help = "Writes AST snapshot after the dead code elimination pass.")]
+    #[clap(
+        long,
+        help = "Writes AST snapshot after the dead code elimination pass. Implicitly enables dead code elimination."
+    )]
     pub enable_dce_ast_snapshot: bool,
 }
 
-impl From<BuildOptions> for OutputOptions {
+impl From<BuildOptions> for CompilerOptions {
     fn from(options: BuildOptions) -> Self {
+        // Extract flags from BuildOptions.
         let mut out_options = Self {
+            run_dead_code_elimination: options.enable_dead_code_elimination,
             spans_enabled: options.enable_spans,
             input_ast_initial: options.enable_initial_input_ast_snapshot,
             ast_initial: options.enable_initial_ast_snapshot,
@@ -60,12 +65,17 @@ impl From<BuildOptions> for OutputOptions {
             ssa_ast: options.enable_ssa_ast_snapshot,
             dead_code_eliminated_ast: options.enable_dce_ast_snapshot,
         };
+        // `enable_all_ast_snapshots` takes precedence over other flags.
         if options.enable_all_ast_snapshots {
             out_options.input_ast_initial = true;
             out_options.ast_initial = true;
             out_options.flattened_ast = true;
             out_options.ssa_ast = true;
             out_options.dead_code_eliminated_ast = true;
+        }
+        // If `enable_dce_ast_snapshot` is enabled, then also run dead code elimination.
+        if out_options.dead_code_eliminated_ast {
+            out_options.run_dead_code_elimination = true;
         }
 
         out_options

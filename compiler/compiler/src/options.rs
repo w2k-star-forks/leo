@@ -15,7 +15,9 @@
 // along with the Leo library. If not, see <https://www.gnu.org/licenses/>.
 
 #[derive(Clone, Default)]
-pub struct OutputOptions {
+pub struct CompilerOptions {
+    /// If enabled, run the dead code elimination pass.
+    pub run_dead_code_elimination: bool,
     /// Whether spans are enabled in the output ASTs.
     pub spans_enabled: bool,
     /// If enabled, write the AST after parsing.

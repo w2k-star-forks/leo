@@ -21,7 +21,7 @@ use std::{
     rc::Rc,
 };
 
-use crate::{Compiler, OutputOptions};
+use crate::{Compiler, CompilerOptions};
 
 use leo_errors::{
     emitter::{Buffer, Emitter, Handler},
@@ -43,7 +43,7 @@ fn new_compiler(handler: &Handler, main_file_path: PathBuf) -> Compiler<'_> {
         handler,
         main_file_path,
         output_dir,
-        Some(OutputOptions {
+        Some(CompilerOptions {
             spans_enabled: false,
             input_ast_initial: true,
             ast_initial: true,
