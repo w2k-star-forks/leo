@@ -21,34 +21,47 @@ use leo_errors::FlattenError;
 
 use crate::{Declaration, Flattener, Value, VariableSymbol};
 
+fn map_const((expr, val): (Expression, Option<Value>)) -> Expression {
+    val.map(|v| Expression::Literal(v.into())).unwrap_or(expr)
+}
+
 impl<'a> StatementReconstructor for Flattener<'a> {
+    fn reconstruct_return(&mut self, input: ReturnStatement) -> Statement {
+        Statement::Return(ReturnStatement {
+            expression: map_const(self.reconstruct_expression(input.expression)),
+            span: input.span,
+        })
+    }
+
     fn reconstruct_definition(&mut self, input: DefinitionStatement) -> Statement {
         let (value, const_val) = self.reconstruct_expression(input.value);
         let mut st = self.symbol_table.borrow_mut();
 
-        if let Some(const_val) = const_val {
-            if !st.set_variable(&input.variable_name.identifier.name, const_val.clone()) {
-                if let Err(err) = st.insert_variable(
-                    input.variable_name.identifier.name,
-                    VariableSymbol {
-                        type_: (&const_val).into(),
-                        span: input.variable_name.identifier.span,
-                        declaration: match &input.declaration_type {
-                            Declare::Const => Declaration::Const(Some(const_val.clone())),
-                            Declare::Let => Declaration::Mut(Some(const_val.clone())),
+        if let Some(const_val) = const_val.clone() {
+            input.variable_names.iter().for_each(|var| {
+                if !st.set_variable(&var.identifier.name, const_val.clone()) {
+                    if let Err(err) = st.insert_variable(
+                        var.identifier.name,
+                        VariableSymbol {
+                            type_: (&const_val).into(),
+                            span: var.identifier.span,
+                            declaration: match &input.declaration_type {
+                                Declare::Const => Declaration::Const(Some(const_val.clone())),
+                                Declare::Let => Declaration::Mut(Some(const_val.clone())),
+                            },
                         },
-                    },
-                ) {
-                    self.handler.emit_err(err);
+                    ) {
+                        self.handler.emit_err(err);
+                    }
                 }
-            }
+            });
         }
 
         Statement::Definition(DefinitionStatement {
             declaration_type: input.declaration_type,
-            variable_name: input.variable_name.clone(),
+            variable_names: input.variable_names.clone(),
             type_: input.type_,
-            value,
+            value: map_const((value, const_val)),
             span: input.span,
         })
     }
@@ -66,7 +79,7 @@ impl<'a> StatementReconstructor for Flattener<'a> {
         let mut st = self.symbol_table.borrow_mut();
         let var_in_local = st.variable_in_local_scope(&var_name);
 
-        if let Some(c) = const_val {
+        if let Some(c) = const_val.clone() {
             if !self.non_const_block || var_in_local {
                 st.set_variable(&var_name, c);
             } else {
@@ -80,7 +93,7 @@ impl<'a> StatementReconstructor for Flattener<'a> {
         Statement::Assign(Box::new(AssignStatement {
             operation: input.operation,
             place,
-            value,
+            value: map_const((value, const_val)),
             span: input.span,
         }))
     }
@@ -95,7 +108,7 @@ impl<'a> StatementReconstructor for Flattener<'a> {
         self.non_const_block = prev_non_const_block;
 
         Statement::Conditional(ConditionalStatement {
-            condition,
+            condition: map_const((condition, const_value)),
             block,
             next,
             span: input.span,
@@ -207,6 +220,33 @@ impl<'a> StatementReconstructor for Flattener<'a> {
 
         Statement::Block(Block {
             statements: Vec::new(),
+            span: input.span,
+        })
+    }
+
+    fn reconstruct_console(&mut self, input: ConsoleStatement) -> Statement {
+        Statement::Console(ConsoleStatement {
+            function: match input.function {
+                ConsoleFunction::Assert(expr) => ConsoleFunction::Assert(map_const(self.reconstruct_expression(expr))),
+                ConsoleFunction::Error(fmt) => ConsoleFunction::Error(ConsoleArgs {
+                    string: fmt.string,
+                    parameters: fmt
+                        .parameters
+                        .into_iter()
+                        .map(|p| map_const(self.reconstruct_expression(p)))
+                        .collect(),
+                    span: fmt.span,
+                }),
+                ConsoleFunction::Log(fmt) => ConsoleFunction::Log(ConsoleArgs {
+                    string: fmt.string,
+                    parameters: fmt
+                        .parameters
+                        .into_iter()
+                        .map(|p| map_const(self.reconstruct_expression(p)))
+                        .collect(),
+                    span: fmt.span,
+                }),
+            },
             span: input.span,
         })
     }
