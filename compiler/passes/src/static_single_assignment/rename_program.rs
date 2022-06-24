@@ -30,8 +30,8 @@ impl<'a> ProgramReconstructor for StaticSingleAssigner<'a> {
             match input {
                 FunctionInput::Variable(function_input_variable) => {
                     self.rename_table.update(
-                        function_input_variable.identifier.name.clone(),
-                        function_input_variable.identifier.name.clone(),
+                        function_input_variable.identifier.name,
+                        function_input_variable.identifier.name,
                     );
                 }
             }

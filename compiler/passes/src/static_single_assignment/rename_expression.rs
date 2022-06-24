@@ -29,7 +29,7 @@ impl<'a> ExpressionReconstructor for StaticSingleAssigner<'a> {
         match self.is_lhs {
             true => {
                 let new_name = Symbol::intern(&format!("{}${}", identifier.name, self.get_unique_id()));
-                self.rename_table.update(identifier.name, new_name.clone());
+                self.rename_table.update(identifier.name, new_name);
                 (
                     Expression::Identifier(Identifier {
                         name: new_name,
@@ -47,7 +47,7 @@ impl<'a> ExpressionReconstructor for StaticSingleAssigner<'a> {
                     ),
                     Some(name) => (
                         Expression::Identifier(Identifier {
-                            name: name.clone(),
+                            name: *name,
                             span: identifier.span,
                         }),
                         Default::default(),

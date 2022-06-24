@@ -69,8 +69,6 @@ impl<'a> StaticSingleAssigner<'a> {
     /// If the RenameTable has a parent, then `self.rename_table` is set to the parent, otherwise it is set to a default `RenameTable`.
     pub(crate) fn pop(&mut self) -> RenameTable {
         let parent = self.rename_table.parent.clone().unwrap();
-        let child_table = core::mem::replace(&mut self.rename_table, *parent);
-
-        child_table
+        core::mem::replace(&mut self.rename_table, *parent)
     }
 }

@@ -112,22 +112,22 @@ impl<'a> StatementReconstructor for StaticSingleAssigner<'a> {
         let write_set = if_write_set.union(&else_write_set);
 
         // TODO: Better error handling.
-        for symbol in write_set.into_iter() {
+        for symbol in write_set {
             let if_name = if_table
                 .lookup(symbol)
-                .expect(&format!("Symbol {} should exist in the program.", symbol));
+                .unwrap_or_else(|| panic!("Symbol {} should exist in the program.", symbol));
             let else_name = else_table
                 .lookup(symbol)
-                .expect(&format!("Symbol {} should exist in the program.", symbol));
+                .unwrap_or_else(|| panic!("Symbol {} should exist in the program.", symbol));
 
             let ternary = Expression::Ternary(TernaryExpression {
                 condition: Box::new(condition.clone()),
                 if_true: Box::new(Expression::Identifier(Identifier {
-                    name: if_name.clone(),
+                    name: *if_name,
                     span: Default::default(),
                 })),
                 if_false: Box::new(Expression::Identifier(Identifier {
-                    name: else_name.clone(),
+                    name: *else_name,
                     span: Default::default(),
                 })),
                 span: Default::default(),
@@ -135,7 +135,7 @@ impl<'a> StatementReconstructor for StaticSingleAssigner<'a> {
 
             // Create a new name for the variable written to in the `ConditionalStatement`.
             let new_name = Symbol::intern(&format!("{}${}", symbol, self.get_unique_id()));
-            self.rename_table.update(*symbol.clone(), new_name.clone());
+            self.rename_table.update(*(*symbol), new_name);
 
             // Create a new `AssignStatement` for the phi function.
             let assignment = Statement::Assign(Box::from(AssignStatement {
