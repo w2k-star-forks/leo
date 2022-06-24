@@ -14,21 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with the Leo library. If not, see <https://www.gnu.org/licenses/>.
 
-use leo_ast::{Block, ExpressionReducer, ProgramReducer, Statement, StatementReducer, TypeReducer};
-use leo_errors::Result;
-
-use std::marker::PhantomData;
+use leo_ast::{Block, ExpressionReconstructor, ProgramReconstructor, Statement, StatementReconstructor};
 
 #[derive(Default)]
-pub struct FlattenConditionalStatements<'a> {
-    phantom: PhantomData<&'a ()>,
+pub struct ConditionalStatementFlattener {}
+
+impl ExpressionReconstructor for ConditionalStatementFlattener {
+    type AdditionalOutput = ();
 }
 
-impl<'a> TypeReducer for FlattenConditionalStatements<'a> {}
-
-impl<'a> ExpressionReducer for FlattenConditionalStatements<'a> {}
-
-impl<'a> StatementReducer for FlattenConditionalStatements<'a> {
+impl StatementReconstructor for ConditionalStatementFlattener {
     /// Transforms a `BlockStatement` into a new `BlockStatement` without `ConditionalStatements`.
     /// `ConditionalStatement`s are flattened into a sequence of statements containing the if
     /// and else bodies of the original `ConditionalStatement`.
@@ -43,27 +38,27 @@ impl<'a> StatementReducer for FlattenConditionalStatements<'a> {
     /// `<stmt1>
     ///  <stmt2>
     ///  <stmt3>`
-    fn reduce_block(&mut self, block: &Block, statements: Vec<Statement>) -> Result<Block> {
-        let mut new_statements = Vec::with_capacity(statements.len());
-        statements.into_iter().for_each(|statement| {
+    fn reconstruct_block(&mut self, block: Block) -> Block {
+        let mut statements = Vec::with_capacity(block.statements.len());
+        block.statements.into_iter().for_each(|statement| {
             match statement {
                 // Flatten the `ConditionalStatement` and append their bodies to the list of new statements.
                 Statement::Conditional(mut conditional_statement) => {
-                    new_statements.append(&mut conditional_statement.block.statements);
+                    statements.append(&mut conditional_statement.block.statements);
                     if let Some(statement) = conditional_statement.next {
-                        new_statements.push(*statement)
+                        statements.push(*statement)
                     }
                 }
                 // Append any other type of statement to the list of new statements.
-                _ => new_statements.push(statement),
+                _ => statements.push(statement),
             }
         });
 
-        Ok(Block {
-            statements: new_statements,
+        Block {
+            statements,
             span: block.span,
-        })
+        }
     }
 }
 
-impl<'a> ProgramReducer for FlattenConditionalStatements<'a> {}
+impl ProgramReconstructor for ConditionalStatementFlattener {}

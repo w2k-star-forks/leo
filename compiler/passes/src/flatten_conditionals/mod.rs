@@ -14,24 +14,21 @@
 // You should have received a copy of the GNU General Public License
 // along with the Leo library. If not, see <https://www.gnu.org/licenses/>.
 
-mod director;
-use director::*;
-
-pub mod reducer;
-pub use reducer::*;
+pub mod flattener;
+pub use flattener::*;
 
 use crate::Pass;
 
-use leo_ast::{Ast, ProgramReducerDirector};
+use leo_ast::{Ast, ProgramReconstructor};
 use leo_errors::Result;
 
-impl<'a> Pass for FlattenConditionalStatements<'a> {
-    type Input = &'a Ast;
+impl Pass for ConditionalStatementFlattener {
+    type Input = Ast;
     type Output = Result<Ast>;
 
     fn do_pass(ast: Self::Input) -> Self::Output {
-        let mut director = Director::default();
-        let program = director.reduce_program(ast.as_repr())?;
+        let mut reconstructor = ConditionalStatementFlattener::default();
+        let program = reconstructor.reconstruct_program(ast.into_repr());
 
         Ok(Ast::new(program))
     }
