@@ -44,10 +44,13 @@ fn new_compiler(handler: &Handler, main_file_path: PathBuf) -> Compiler<'_> {
         main_file_path,
         output_dir,
         Some(CompilerOptions {
+            run_dead_code_elimination: true,
             spans_enabled: false,
             input_ast_initial: true,
             ast_initial: true,
             flattened_ast: true,
+            ssa_ast: true,
+            dead_code_eliminated_ast: true,
         }),
     )
 }
