@@ -35,33 +35,35 @@ impl<'a> StatementVisitor<'a> for TypeChecker<'a> {
     }
 
     fn visit_definition(&mut self, input: &'a DefinitionStatement) {
-        input.variable_names.iter().for_each(|v| {
-            self.validate_ident_type(&Some(input.type_));
+        self.validate_ident_type(&Some(input.type_));
 
-            let output = self.visit_expression(&input.value, &Some(input.type_));
+        let output = self.visit_expression(&input.value, &Some(input.type_));
 
-            let var = VariableSymbol {
-                type_: input.type_,
-                span: input.span(),
-                declaration: match output {
-                    TypeOutput::Const(c) if input.declaration_type.is_const() => Declaration::Const(Some(c)),
-                    TypeOutput::Const(c) => Declaration::Mut(Some(c)),
-                    TypeOutput::Type(_) if input.declaration_type.is_const() => {
-                        self.handler
-                            .emit_err(TypeCheckerError::cannot_define_const_with_non_const(
-                                v.identifier.name,
-                                input.span,
-                            ));
-                        Declaration::Const(None)
-                    }
-                    _ if input.declaration_type.is_const() => Declaration::Const(None),
-                    _ => Declaration::Mut(None),
-                },
-            };
-            if let Err(err) = self.symbol_table.borrow_mut().insert_variable(v.identifier.name, var) {
-                self.handler.emit_err(err);
-            }
-        });
+        let var = VariableSymbol {
+            type_: input.type_,
+            span: input.span(),
+            declaration: match output {
+                TypeOutput::Const(c) if input.declaration_type.is_const() => Declaration::Const(Some(c)),
+                TypeOutput::Const(c) => Declaration::Mut(Some(c)),
+                TypeOutput::Type(_) if input.declaration_type.is_const() => {
+                    self.handler
+                        .emit_err(TypeCheckerError::cannot_define_const_with_non_const(
+                            input.variable_name.identifier.name,
+                            input.span,
+                        ));
+                    Declaration::Const(None)
+                }
+                _ if input.declaration_type.is_const() => Declaration::Const(None),
+                _ => Declaration::Mut(None),
+            },
+        };
+        if let Err(err) = self
+            .symbol_table
+            .borrow_mut()
+            .insert_variable(input.variable_name.identifier.name, var)
+        {
+            self.handler.emit_err(err);
+        }
     }
 
     fn visit_assign(&mut self, input: &'a AssignStatement) {

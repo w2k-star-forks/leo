@@ -16,7 +16,7 @@
 
 use crate::StaticSingleAssigner;
 
-use leo_ast::{Function, FunctionInput, Node, ProgramReconstructor, Statement, StatementReconstructor};
+use leo_ast::{Function, FunctionInput, ProgramReconstructor, StatementReconstructor};
 
 impl<'a> ProgramReconstructor for StaticSingleAssigner<'a> {
     /// Reduces the `Function`s in the `Program`, while allocating the appropriate `RenameTable`s.
@@ -37,7 +37,7 @@ impl<'a> ProgramReconstructor for StaticSingleAssigner<'a> {
             }
         }
 
-        let Statement::Block(block) = self.reconstruct_block(function.block);
+        let block = self.reconstruct_block(function.block);
 
         // Remove the `RenameTable` for the function.
         self.pop();

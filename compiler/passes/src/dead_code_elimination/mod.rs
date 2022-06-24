@@ -25,16 +25,16 @@ mod eliminate_statement;
 
 use crate::Pass;
 
-use leo_ast::{Ast, ProgramReducerDirector};
+use leo_ast::{Ast, ProgramReconstructor};
 use leo_errors::Result;
 
-impl<'a> Pass for DeadCodeEliminator<'a> {
+impl Pass for DeadCodeEliminator {
     type Input = Ast;
     type Output = Result<Ast>;
 
     fn do_pass(ast: Self::Input) -> Self::Output {
         let mut reconstructor = DeadCodeEliminator::default();
-        let program = reconstructor.reduce_program(ast.as_repr());
+        let program = reconstructor.reconstruct_program(ast.into_repr());
 
         Ok(Ast::new(program))
     }

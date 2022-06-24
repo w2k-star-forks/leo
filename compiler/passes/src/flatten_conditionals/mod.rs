@@ -22,6 +22,7 @@ use crate::Pass;
 use leo_ast::{Ast, ProgramReconstructor};
 use leo_errors::Result;
 
+// TODO: Integrate this pass into the SSA pass.
 impl Pass for ConditionalStatementFlattener {
     type Input = Ast;
     type Output = Result<Ast>;

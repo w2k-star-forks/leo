@@ -16,7 +16,7 @@
 
 use crate::StaticSingleAssigner;
 
-use leo_ast::{ExpressionReconstructor, Identifier, Node};
+use leo_ast::{Expression, ExpressionReconstructor, Identifier};
 use leo_span::Symbol;
 
 impl<'a> ExpressionReconstructor for StaticSingleAssigner<'a> {
@@ -25,16 +25,16 @@ impl<'a> ExpressionReconstructor for StaticSingleAssigner<'a> {
     /// Produces a new `Identifier` with a unique name.
     /// If this function is invoked on the left-hand side of a definition or assignment, a new unique name is introduced.
     /// Otherwise, we look up the previous name in the `RenameTable`.
-    fn reconstruct_identifier(&mut self, identifier: Identifier) -> (Identifier, Self::AdditionalOutput) {
+    fn reconstruct_identifier(&mut self, identifier: Identifier) -> (Expression, Self::AdditionalOutput) {
         match self.is_lhs {
             true => {
                 let new_name = Symbol::intern(&format!("{}${}", identifier.name, self.get_unique_id()));
                 self.rename_table.update(identifier.name, new_name.clone());
                 (
-                    Identifier {
+                    Expression::Identifier(Identifier {
                         name: new_name,
                         span: identifier.span,
-                    },
+                    }),
                     Default::default(),
                 )
             }
@@ -46,10 +46,10 @@ impl<'a> ExpressionReconstructor for StaticSingleAssigner<'a> {
                         identifier.name
                     ),
                     Some(name) => (
-                        Identifier {
+                        Expression::Identifier(Identifier {
                             name: name.clone(),
                             span: identifier.span,
-                        },
+                        }),
                         Default::default(),
                     ),
                 }

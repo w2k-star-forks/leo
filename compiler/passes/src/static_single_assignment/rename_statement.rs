@@ -29,12 +29,15 @@ impl<'a> StatementReconstructor for StaticSingleAssigner<'a> {
     /// Reconstructs the `DefinitionStatement` into an `AssignStatement`, renaming the left-hand-side as appropriate.
     fn reconstruct_definition(&mut self, definition: DefinitionStatement) -> Statement {
         self.is_lhs = true;
-        let variable_name = self.reconstruct_identifier(definition.variable_name.identifier).0;
+        let identifier = match self.reconstruct_identifier(definition.variable_name.identifier).0 {
+            Expression::Identifier(identifier) => identifier,
+            _ => unreachable!("`reconstruct_identifier` will always return an `Identifier`."),
+        };
         self.is_lhs = false;
 
         Statement::Assign(Box::new(AssignStatement {
             operation: AssignOperation::Assign,
-            place: Expression::Identifier(variable_name),
+            place: Expression::Identifier(identifier),
             value: self.reconstruct_expression(definition.value).0,
             span: Default::default(),
         }))
@@ -51,34 +54,32 @@ impl<'a> StatementReconstructor for StaticSingleAssigner<'a> {
         let place = self.reconstruct_expression(assign.place).0;
         self.is_lhs = false;
 
-        let value = self.reconstruct_expression(assign.value).0;
-
         // Helper function to construct a binary expression using `assignee` and `value` as operands.
-        let reconstruct_to_binary_operation = |binary_operation: BinaryOperation, value: Expression| -> Expression {
-            let expression_span = value.span();
-            Expression::Binary(BinaryExpression {
-                left: Box::new(value),
-                right: Box::new(self.reconstruct_expression(value).0),
-                op: binary_operation,
-                span: expression_span,
-            })
-        };
+        let mut reconstruct_to_binary_operation =
+            |binary_operation: BinaryOperation, value: Expression| -> Expression {
+                let expression_span = value.span();
+                Expression::Binary(BinaryExpression {
+                    left: Box::new(place.clone()),
+                    right: Box::new(self.reconstruct_expression(value).0),
+                    op: binary_operation,
+                    span: expression_span,
+                })
+            };
 
         let value = match assign.operation {
-            AssignOperation::Assign => value,
-            AssignOperation::Add => reconstruct_to_binary_operation(BinaryOperation::Add, value),
-            AssignOperation::Sub => reconstruct_to_binary_operation(BinaryOperation::Sub, value),
-            AssignOperation::Mul => reconstruct_to_binary_operation(BinaryOperation::Mul, value),
-            AssignOperation::Div => reconstruct_to_binary_operation(BinaryOperation::Div, value),
-            AssignOperation::Pow => reconstruct_to_binary_operation(BinaryOperation::Pow, value),
-            AssignOperation::Or => reconstruct_to_binary_operation(BinaryOperation::Or, value),
-            AssignOperation::And => reconstruct_to_binary_operation(BinaryOperation::And, value),
-            AssignOperation::BitOr => reconstruct_to_binary_operation(BinaryOperation::BitOr, value),
-            AssignOperation::BitAnd => reconstruct_to_binary_operation(BinaryOperation::BitAnd, value),
-            AssignOperation::BitXor => reconstruct_to_binary_operation(BinaryOperation::BitXor, value),
-            AssignOperation::Shr => reconstruct_to_binary_operation(BinaryOperation::Shr, value),
-            AssignOperation::ShrSigned => reconstruct_to_binary_operation(BinaryOperation::ShrSigned, value),
-            AssignOperation::Shl => reconstruct_to_binary_operation(BinaryOperation::Shl, value),
+            AssignOperation::Assign => self.reconstruct_expression(assign.value).0,
+            AssignOperation::Add => reconstruct_to_binary_operation(BinaryOperation::Add, assign.value),
+            AssignOperation::Sub => reconstruct_to_binary_operation(BinaryOperation::Sub, assign.value),
+            AssignOperation::Mul => reconstruct_to_binary_operation(BinaryOperation::Mul, assign.value),
+            AssignOperation::Div => reconstruct_to_binary_operation(BinaryOperation::Div, assign.value),
+            AssignOperation::Pow => reconstruct_to_binary_operation(BinaryOperation::Pow, assign.value),
+            AssignOperation::Or => reconstruct_to_binary_operation(BinaryOperation::Or, assign.value),
+            AssignOperation::And => reconstruct_to_binary_operation(BinaryOperation::And, assign.value),
+            AssignOperation::BitOr => reconstruct_to_binary_operation(BinaryOperation::BitwiseOr, assign.value),
+            AssignOperation::BitAnd => reconstruct_to_binary_operation(BinaryOperation::BitwiseAnd, assign.value),
+            AssignOperation::BitXor => reconstruct_to_binary_operation(BinaryOperation::Xor, assign.value),
+            AssignOperation::Shr => reconstruct_to_binary_operation(BinaryOperation::Shr, assign.value),
+            AssignOperation::Shl => reconstruct_to_binary_operation(BinaryOperation::Shl, assign.value),
         };
 
         Statement::Assign(Box::new(AssignStatement {
@@ -94,15 +95,14 @@ impl<'a> StatementReconstructor for StaticSingleAssigner<'a> {
 
         // Instantiate a `RenameTable` for the if-block.
         self.push();
-        let Statement::Block(block) = self.reconstruct_block(conditional.block);
-        let if_table = self.reducer.pop();
+        let block = self.reconstruct_block(conditional.block);
+        let if_table = self.pop();
 
         // Instantiate a `RenameTable` for the else-block.
         self.push();
         let next = conditional
             .next
-            .map(|condition| self.reconstruct_statement(*condition))
-            .transpose();
+            .map(|condition| Box::new(self.reconstruct_statement(*condition)));
 
         let else_table = self.pop();
 
@@ -166,21 +166,12 @@ impl<'a> StatementReconstructor for StaticSingleAssigner<'a> {
     ///       - `if x > 0 { x = x + 1 }` becomes `let cond$0 = x > 0; if cond$0 { x = x + 1; }`
     ///       - `if true { x = x + 1 }` remains the same.
     ///       - `if b { x = x + 1 }` remains the same.
-    fn reconstruct_block(&mut self, block: Block) -> Statement {
+    ///   - Flattens the resulting `ConditionalStatement`s.
+    fn reconstruct_block(&mut self, block: Block) -> Block {
         let mut statements = Vec::with_capacity(block.statements.len());
         for statement in block.statements.into_iter() {
-            statements.push(self.reconstruct_statement(statement));
-            // If the statement is a `ConditionalStatement`, then add any phi functions that were produced.
-            if let Statement::Conditional(..) = statement {
-                statements.append(&mut self.clear_phi_functions())
-            }
-        }
-
-        let mut new_statements = Vec::with_capacity(statements.len());
-        statements.into_iter().for_each(|statement| {
             match statement {
-                // Extract the condition of a `ConditionalStatement` and introduce a new `AssignStatement` for it, if necessary.
-                Statement::Conditional(ref conditional_statement) => {
+                Statement::Conditional(conditional_statement) => {
                     match conditional_statement.condition {
                         // TODO: Do we have a better way of handling unreachable errors?
                         Expression::Call(..) => {
@@ -189,7 +180,9 @@ impl<'a> StatementReconstructor for StaticSingleAssigner<'a> {
                         Expression::Err(_) => {
                             unreachable!("Err expressions should not exist in the AST at this stage of compilation.")
                         }
-                        Expression::Identifier(..) | Expression::Value(..) => new_statements.push(statement),
+                        Expression::Identifier(..) | Expression::Literal(..) => {
+                            statements.push(self.reconstruct_conditional(conditional_statement))
+                        }
                         Expression::Binary(..) | Expression::Unary(..) | Expression::Ternary(..) => {
                             // Create a fresh variable name for the condition.
                             let symbol_string = format!("cond${}", self.get_unique_id());
@@ -198,22 +191,29 @@ impl<'a> StatementReconstructor for StaticSingleAssigner<'a> {
                             let place = Expression::Identifier(Identifier::new(Symbol::intern(&symbol_string)));
                             let assign_statement = Statement::Assign(Box::new(AssignStatement {
                                 operation: AssignOperation::Assign,
-                                place,
-                                value: conditional_statement.condition.clone(),
+                                place: place.clone(),
+                                value: self.reconstruct_expression(conditional_statement.condition).0,
                                 span: Span::default(),
                             }));
-                            new_statements.push(assign_statement);
-                            new_statements.push(statement);
+                            let rewritten_conditional_statement = ConditionalStatement {
+                                condition: place,
+                                block: conditional_statement.block,
+                                next: conditional_statement.next,
+                                span: conditional_statement.span,
+                            };
+                            statements.push(assign_statement);
+                            statements.push(self.reconstruct_conditional(rewritten_conditional_statement));
                         }
                     };
+                    statements.append(&mut self.clear_phi_functions());
                 }
-                _ => new_statements.push(statement),
+                _ => statements.push(self.reconstruct_statement(statement)),
             }
-        });
+        }
 
-        Ok(Block {
-            statements: new_statements,
+        Block {
+            statements,
             span: block.span,
-        })
+        }
     }
 }

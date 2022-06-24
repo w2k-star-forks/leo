@@ -21,7 +21,7 @@ use leo_ast::{
     ReturnStatement, Statement, StatementReconstructor,
 };
 
-impl<'a> StatementReconstructor for DeadCodeEliminator<'a> {
+impl StatementReconstructor for DeadCodeEliminator {
     /// Reduces a `ReturnStatement`. Note that all symbols in the expression of the `ReturnStatement` are critical.
     fn reconstruct_return(&mut self, return_statement: ReturnStatement) -> Statement {
         self.set_critical();
@@ -36,8 +36,11 @@ impl<'a> StatementReconstructor for DeadCodeEliminator<'a> {
 
     /// Reduces an `AssignStatement`. Note that if the left-hand-side of the assignment is marked, then the right-hand-side of the assignment is critical.
     fn reconstruct_assign(&mut self, assign: AssignStatement) -> Statement {
-        let Expression::Identifier(id) = self.reconstruct_expression(assign.place).0;
-        if self.is_marked(&id.name) {
+        let identifier = match self.reconstruct_expression(assign.place).0 {
+            Expression::Identifier(identifier) => identifier,
+            _ => unreachable!("`AssignStatement` can only have `Identifier` as the left-hand-side."),
+        };
+        if self.is_marked(&identifier.name) {
             self.set_critical();
         }
         let value = self.reconstruct_expression(assign.value).0;
@@ -45,7 +48,7 @@ impl<'a> StatementReconstructor for DeadCodeEliminator<'a> {
 
         Statement::Assign(Box::new(AssignStatement {
             operation: assign.operation,
-            place: Expression::Identifier(id),
+            place: Expression::Identifier(identifier),
             value,
             span: assign.span,
         }))

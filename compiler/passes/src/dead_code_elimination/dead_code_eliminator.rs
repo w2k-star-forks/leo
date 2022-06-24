@@ -17,18 +17,16 @@
 use leo_span::Symbol;
 
 use indexmap::IndexMap;
-use std::marker::PhantomData;
 
 #[derive(Debug, Default)]
-pub struct DeadCodeEliminator<'a> {
+pub struct DeadCodeEliminator {
     /// A mapping determining which symbols are marked.
     marked: IndexMap<Symbol, bool>,
     /// A flag that determines if we are traversing a portion of the AST that has an effect on output.
     is_critical: bool,
-    phantom: PhantomData<&'a ()>,
 }
 
-impl<'a> DeadCodeEliminator<'a> {
+impl DeadCodeEliminator {
     /// A function that returns whether or not a symbol is marked.
     /// If a symbol is marked, then it's declaration is not dead code.
     /// If a symbol is not marked, then it's declaration is dead code.

@@ -18,4 +18,4 @@ use crate::DeadCodeEliminator;
 
 use leo_ast::ProgramReconstructor;
 
-impl<'a> ProgramReconstructor for DeadCodeEliminator<'a> {}
+impl ProgramReconstructor for DeadCodeEliminator {}
