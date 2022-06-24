@@ -4,12 +4,12 @@ expectation: Pass
 outputs:
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -19,12 +19,12 @@ outputs:
         hi: 19
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -34,12 +34,12 @@ outputs:
         hi: 14
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -49,12 +49,12 @@ outputs:
         hi: 15
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -64,12 +64,12 @@ outputs:
         hi: 20
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -79,12 +79,12 @@ outputs:
         hi: 18
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -94,12 +94,12 @@ outputs:
         hi: 16
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -109,12 +109,12 @@ outputs:
         hi: 16
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -124,12 +124,12 @@ outputs:
         hi: 15
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -139,12 +139,12 @@ outputs:
         hi: 17
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -154,12 +154,12 @@ outputs:
         hi: 15
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -169,12 +169,12 @@ outputs:
         hi: 16
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -184,12 +184,12 @@ outputs:
         hi: 16
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -199,12 +199,12 @@ outputs:
         hi: 16
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -214,12 +214,12 @@ outputs:
         hi: 17
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -229,12 +229,12 @@ outputs:
         hi: 15
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -244,12 +244,12 @@ outputs:
         hi: 16
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -259,12 +259,12 @@ outputs:
         hi: 16
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -274,12 +274,12 @@ outputs:
         hi: 16
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -289,12 +289,12 @@ outputs:
         hi: 17
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -304,12 +304,12 @@ outputs:
         hi: 19
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -319,12 +319,12 @@ outputs:
         hi: 17
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -334,12 +334,12 @@ outputs:
         hi: 17
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -349,12 +349,12 @@ outputs:
         hi: 17
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
@@ -364,12 +364,12 @@ outputs:
         hi: 18
   - Definition:
       declaration_type: Let
-      variable_names:
-        - mutable: true
-          identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
-          span:
-            lo: 4
-            hi: 5
+      variable_name:
+        mutable: true
+        identifier: "{\"name\":\"x\",\"span\":\"{\\\"lo\\\":4,\\\"hi\\\":5}\"}"
+        span:
+          lo: 4
+          hi: 5
       type_:
         IntegerType: U8
       value:
