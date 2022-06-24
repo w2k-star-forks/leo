@@ -161,7 +161,7 @@ impl<'a> Compiler<'a> {
     /// Runs the static single assignment pass.
     ///
     pub fn static_single_assignment_pass(&mut self) -> Result<()> {
-        self.ast = StaticSingleAssignmentReducer::do_pass((&self.ast, self.handler))?;
+        self.ast = StaticSingleAssigner::do_pass((std::mem::take(&mut self.ast), self.handler))?;
 
         if self.output_options.ssa_ast {
             self.write_ast_to_json("ssa_ast.json")?;
@@ -175,7 +175,7 @@ impl<'a> Compiler<'a> {
     /// Runs a compiler pass that flattens conditional statements.
     ///
     pub fn conditional_statement_flattening_pass(&mut self) -> Result<()> {
-        self.ast = FlattenConditionalStatements::do_pass(&self.ast)?;
+        self.ast = ConditionalStatementFlattener::do_pass(std::mem::take(&mut self.ast))?;
 
         if self.output_options.flattened_conditional_ast {
             self.write_ast_to_json("flattened_conditional_ast.json")?;
@@ -188,7 +188,7 @@ impl<'a> Compiler<'a> {
     /// Runs the dead code elimination pass.
     ///
     pub fn dead_code_elimination_pass(&mut self) -> Result<()> {
-        self.ast = DeadCodeEliminator::do_pass(&self.ast)?;
+        self.ast = DeadCodeEliminator::do_pass(std::mem::take(&mut self.ast))?;
 
         if self.output_options.dead_code_eliminated_ast {
             self.write_ast_to_json("dead_code_eliminated_ast.json")?;

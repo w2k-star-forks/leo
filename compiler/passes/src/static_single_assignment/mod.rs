@@ -23,8 +23,8 @@ mod rename_statement;
 mod rename_table;
 pub(crate) use rename_table::*;
 
-mod static_single_assigner;
-pub(crate) use static_single_assigner::*;
+pub mod static_single_assigner;
+pub use static_single_assigner::*;
 
 use crate::Pass;
 

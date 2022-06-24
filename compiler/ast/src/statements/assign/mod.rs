@@ -47,11 +47,12 @@ pub enum AssignOperation {
     BitXor,
     /// Shift right assignment.
     Shr,
-    /// Signed shift right assignment.
-    ShrSigned,
+    // TODO: This should not be supported until it supported by `BinaryOperation`.
+    // /// Signed shift right assignment.
+    // ShrSigned,
     /// Shift left assignment.
     Shl,
-    // TODO: These should not be supported until `BinaryOperation` supports them.
+    // TODO: This should not be supported until it is supported by `BinaryOperation`.
     // /// Modulus / remainder assignment.
     // Mod,
 }
@@ -71,7 +72,7 @@ impl AsRef<str> for AssignOperation {
             AssignOperation::BitAnd => "&=",
             AssignOperation::BitXor => "^=",
             AssignOperation::Shr => ">>=",
-            AssignOperation::ShrSigned => ">>>=",
+            // AssignOperation::ShrSigned => ">>>=",
             AssignOperation::Shl => "<<=",
             // AssignOperation::Mod => "%=",
         }
