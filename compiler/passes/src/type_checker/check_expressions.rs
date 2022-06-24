@@ -19,13 +19,10 @@ use leo_errors::TypeCheckerError;
 
 use crate::{TypeChecker, Value};
 
-fn return_incorrect_type(
-    t1: Option<Type>,
-    t2: Option<Type>,
-    value: Option<Value>,
-    expected: &Option<Type>,
-) -> TypeOutput {
+fn return_incorrect_type(t1: Option<Type>, t2: Option<Type>, value: TypeOutput, expected: &Option<Type>) -> TypeOutput {
     match (t1, t2) {
+        (Some(_), None) | (None, Some(_)) | (None, None) => TypeOutput::None,
+        _ if value.is_const() => value,
         (Some(t1), Some(t2)) if t1 == t2 => TypeOutput::Type(t1),
         (Some(t1), Some(t2)) => {
             if let Some(expected) = expected {
@@ -38,8 +35,6 @@ fn return_incorrect_type(
                 TypeOutput::Type(t1)
             }
         }
-        _ if value.is_some() => TypeOutput::Const(value.unwrap()),
-        _ => TypeOutput::None,
     }
 }
 
@@ -47,7 +42,30 @@ fn return_incorrect_type(
 pub enum TypeOutput {
     Type(Type),
     Const(Value),
+    // TODO: this is not a solution to the whole const binary flattening issue
+    ConstExpr(Type),
     None,
+}
+
+impl TypeOutput {
+    fn combine_consts(&self, other: &Self) -> Self {
+        match (self, other) {
+            (TypeOutput::Const(t1), TypeOutput::Const(t2)) if Type::from(t1) == Type::from(t2) => {
+                TypeOutput::ConstExpr(t1.into())
+            }
+            (TypeOutput::Const(t1), TypeOutput::ConstExpr(t2)) | (TypeOutput::ConstExpr(t2), TypeOutput::Const(t1))
+                if Type::from(t1) == *t2 =>
+            {
+                TypeOutput::ConstExpr(*t2)
+            }
+            (TypeOutput::ConstExpr(t1), TypeOutput::ConstExpr(t2)) if t1 == t2 => TypeOutput::ConstExpr(*t1),
+            _ => Self::None,
+        }
+    }
+
+    fn is_const(&self) -> bool {
+        matches!(self, Self::Const(_) | Self::ConstExpr(_))
+    }
 }
 
 impl From<TypeOutput> for Option<Type> {
@@ -61,7 +79,24 @@ impl From<&TypeOutput> for Option<Type> {
         match t {
             TypeOutput::Type(t) => Some(*t),
             TypeOutput::Const(v) => Some(v.into()),
+            TypeOutput::ConstExpr(t) => Some(*t),
             TypeOutput::None => None,
+        }
+    }
+}
+
+impl From<TypeOutput> for Option<Value> {
+    fn from(t: TypeOutput) -> Self {
+        t.as_ref().into()
+    }
+}
+
+impl From<&TypeOutput> for Option<Value> {
+    fn from(t: &TypeOutput) -> Self {
+        if let TypeOutput::Const(v) = t {
+            Some(v.clone())
+        } else {
+            None
         }
     }
 }
@@ -95,8 +130,8 @@ impl<'a> ExpressionVisitor<'a> for TypeChecker<'a> {
     }
 
     fn visit_identifier(&mut self, input: &'a Identifier, expected: &Self::AdditionalInput) -> Self::Output {
-        if let Some(var) = self.symbol_table.borrow().lookup_variable(input.name).cloned() {
-            self.assert_expected_option(var.type_, var.declaration.get_const_value(), expected, var.span)
+        if let Some(var) = self.symbol_table.borrow().lookup_variable(&input.name).cloned() {
+            self.assert_expected_option(var.type_, var.get_const_value(*input), expected, var.span)
         } else {
             self.handler
                 .emit_err(TypeCheckerError::unknown_sym("variable", input.name, input.span()));
@@ -281,7 +316,7 @@ impl<'a> ExpressionVisitor<'a> for TypeChecker<'a> {
                 let t1 = self.visit_expression(&input.left, expected);
                 let t2 = self.visit_expression(&input.right, expected);
 
-                return_incorrect_type(t1.into(), t2.into(), None, expected)
+                return_incorrect_type(t1.as_ref().into(), t2.as_ref().into(), t1.combine_consts(&t2), expected)
             }
             BinaryOperation::BitwiseAnd | BinaryOperation::BitwiseOr | BinaryOperation::Xor => {
                 // Assert equal boolean or integer types.
@@ -289,21 +324,21 @@ impl<'a> ExpressionVisitor<'a> for TypeChecker<'a> {
                 let t1 = self.visit_expression(&input.left, expected);
                 let t2 = self.visit_expression(&input.right, expected);
 
-                return_incorrect_type(t1.into(), t2.into(), None, expected)
+                return_incorrect_type(t1.as_ref().into(), t2.as_ref().into(), t1.combine_consts(&t2), expected)
             }
             BinaryOperation::Add => {
                 self.assert_field_group_scalar_int_type(expected, input.span());
                 let t1 = self.visit_expression(&input.left, expected);
                 let t2 = self.visit_expression(&input.right, expected);
 
-                return_incorrect_type(t1.into(), t2.into(), None, expected)
+                return_incorrect_type(t1.as_ref().into(), t2.as_ref().into(), t1.combine_consts(&t2), expected)
             }
             BinaryOperation::Sub => {
                 self.assert_field_group_int_type(expected, input.span());
                 let t1 = self.visit_expression(&input.left, expected);
                 let t2 = self.visit_expression(&input.right, expected);
 
-                return_incorrect_type(t1.into(), t2.into(), None, expected)
+                return_incorrect_type(t1.as_ref().into(), t2.as_ref().into(), t1.combine_consts(&t2), expected)
             }
             BinaryOperation::Mul => {
                 self.assert_field_group_int_type(expected, input.span());
@@ -312,7 +347,7 @@ impl<'a> ExpressionVisitor<'a> for TypeChecker<'a> {
                 let t2 = self.visit_expression(&input.right, &None);
 
                 // Allow `group` * `scalar` multiplication.
-                match (t1.into(), t2.into()) {
+                match (t1.as_ref().into(), t2.as_ref().into()) {
                     (Some(Type::Group), other) => {
                         self.assert_expected_type(&other, None, Type::Scalar, input.right.span());
                         self.assert_expected_type(expected, None, Type::Group, input.span())
@@ -321,11 +356,11 @@ impl<'a> ExpressionVisitor<'a> for TypeChecker<'a> {
                         self.assert_expected_type(&other, None, Type::Scalar, input.left.span());
                         self.assert_expected_type(expected, None, Type::Group, input.span())
                     }
-                    (t1, t2) => {
+                    (t1_ty, t2_ty) => {
                         // Assert equal field or integer types.
                         self.assert_field_int_type(expected, input.span());
 
-                        return_incorrect_type(t1, t2, None, expected)
+                        return_incorrect_type(t1_ty, t2_ty, t1.combine_consts(&t2), expected)
                     }
                 }
             }
@@ -335,7 +370,7 @@ impl<'a> ExpressionVisitor<'a> for TypeChecker<'a> {
                 let t1 = self.visit_expression(&input.left, expected);
                 let t2 = self.visit_expression(&input.right, expected);
 
-                return_incorrect_type(t1.into(), t2.into(), None, expected)
+                return_incorrect_type(t1.as_ref().into(), t2.as_ref().into(), t1.combine_consts(&t2), expected)
             }
             BinaryOperation::Pow => {
                 let t1 = self.visit_expression(&input.left, &None);
@@ -388,10 +423,10 @@ impl<'a> ExpressionVisitor<'a> for TypeChecker<'a> {
             | BinaryOperation::MulWrapped => {
                 // Assert equal integer types.
                 self.assert_int_type(expected, input.span);
-                let t1 = self.visit_expression(&input.left, expected).into();
-                let t2 = self.visit_expression(&input.right, expected).into();
+                let t1 = self.visit_expression(&input.left, expected);
+                let t2 = self.visit_expression(&input.right, expected);
 
-                return_incorrect_type(t1, t2, None, expected)
+                return_incorrect_type(t1.as_ref().into(), t2.as_ref().into(), t1.combine_consts(&t2), expected)
             }
             BinaryOperation::Shl
             | BinaryOperation::ShlWrapped
@@ -400,13 +435,14 @@ impl<'a> ExpressionVisitor<'a> for TypeChecker<'a> {
             | BinaryOperation::PowWrapped => {
                 // Assert left and expected are equal integer types.
                 self.assert_int_type(expected, input.span);
-                let t1 = self.visit_expression(&input.left, expected).into();
+                let t1 = self.visit_expression(&input.left, expected);
 
                 // Assert right type is a magnitude (u8, u16, u32).
-                let t2 = self.visit_expression(&input.right, &None).into();
-                self.assert_magnitude_type(&t2, input.right.span());
+                let t2 = self.visit_expression(&input.right, &None);
+                let t2_ty = t2.as_ref().into();
+                self.assert_magnitude_type(&t2_ty, input.right.span());
 
-                return_incorrect_type(t1, t2, None, expected)
+                return_incorrect_type(t1.as_ref().into(), t2_ty, t1.combine_consts(&t2), expected)
             }
         }
     }
@@ -477,12 +513,20 @@ impl<'a> ExpressionVisitor<'a> for TypeChecker<'a> {
     }
 
     fn visit_ternary(&mut self, input: &'a TernaryExpression, expected: &Self::AdditionalInput) -> Self::Output {
-        self.visit_expression(&input.condition, &Some(Type::Boolean));
+        let cond = self.visit_expression(&input.condition, &Some(Type::Boolean));
 
-        let t1 = self.visit_expression(&input.if_true, expected).into();
-        let t2 = self.visit_expression(&input.if_false, expected).into();
+        let t1 = self.visit_expression(&input.if_true, expected);
+        let t1_ty = t1.as_ref().into();
+        let t2 = self.visit_expression(&input.if_false, expected);
+        let t2_ty = t2.as_ref().into();
 
-        return_incorrect_type(t1, t2, None, expected)
+        let out = match cond {
+            TypeOutput::Const(Value::Boolean(true, ..)) => t1,
+            TypeOutput::Const(Value::Boolean(false, ..)) => t2,
+            _ => TypeOutput::None,
+        };
+
+        return_incorrect_type(t1_ty, t2_ty, out, expected)
     }
 
     fn visit_call(&mut self, input: &'a CallExpression, expected: &Self::AdditionalInput) -> Self::Output {
@@ -490,7 +534,7 @@ impl<'a> ExpressionVisitor<'a> for TypeChecker<'a> {
             Expression::Identifier(ident) => {
                 // the function symbol lookup is purposely done outside of the `if let` to avoid a RefCell lifetime bug in rust.
                 // dont move it into the `if let` or it will keep the `symbol_table` alive for the entire block and will be very memory inefficient!
-                let f = self.symbol_table.borrow().lookup_fn(ident.name).cloned();
+                let f = self.symbol_table.borrow().lookup_fn(&ident.name).cloned();
                 if let Some(func) = f {
                     let ret = self.assert_expected_option(func.type_, None, expected, func.span);
 
