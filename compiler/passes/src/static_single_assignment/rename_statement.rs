@@ -113,42 +113,46 @@ impl<'a> StatementReconstructor for StaticSingleAssigner<'a> {
 
         // TODO: Better error handling.
         for symbol in write_set {
-            let if_name = if_table
-                .lookup(symbol)
-                .unwrap_or_else(|| panic!("Symbol {} should exist in the program.", symbol));
-            let else_name = else_table
-                .lookup(symbol)
-                .unwrap_or_else(|| panic!("Symbol {} should exist in the program.", symbol));
+            match self.rename_table.lookup(symbol) {
+                Some(..) => {
+                    let if_name = if_table
+                        .lookup(symbol)
+                        .unwrap_or_else(|| panic!("Symbol {} should exist in the program.", symbol));
+                    let else_name = else_table
+                        .lookup(symbol)
+                        .unwrap_or_else(|| panic!("Symbol {} should exist in the program.", symbol));
 
-            let ternary = Expression::Ternary(TernaryExpression {
-                condition: Box::new(condition.clone()),
-                if_true: Box::new(Expression::Identifier(Identifier {
-                    name: *if_name,
-                    span: Default::default(),
-                })),
-                if_false: Box::new(Expression::Identifier(Identifier {
-                    name: *else_name,
-                    span: Default::default(),
-                })),
-                span: Default::default(),
-            });
+                    let ternary = Expression::Ternary(TernaryExpression {
+                        condition: Box::new(condition.clone()),
+                        if_true: Box::new(Expression::Identifier(Identifier {
+                            name: *if_name,
+                            span: Default::default(),
+                        })),
+                        if_false: Box::new(Expression::Identifier(Identifier {
+                            name: *else_name,
+                            span: Default::default(),
+                        })),
+                        span: Default::default(),
+                    });
 
-            // Create a new name for the variable written to in the `ConditionalStatement`.
-            let new_name = Symbol::intern(&format!("{}${}", symbol, self.get_unique_id()));
-            self.rename_table.update(*(*symbol), new_name);
+                    // Create a new name for the variable written to in the `ConditionalStatement`.
+                    let new_name = Symbol::intern(&format!("{}${}", symbol, self.get_unique_id()));
+                    self.rename_table.update(*(*symbol), new_name);
 
-            // Create a new `AssignStatement` for the phi function.
-            let assignment = Statement::Assign(Box::from(AssignStatement {
-                operation: AssignOperation::Assign,
-                place: Expression::Identifier(Identifier {
-                    name: new_name,
-                    span: Default::default(),
-                }),
-                value: ternary,
-                span: Default::default(),
-            }));
-
-            self.phi_functions.push(assignment);
+                    // Create a new `AssignStatement` for the phi function.
+                    let assignment = Statement::Assign(Box::from(AssignStatement {
+                        operation: AssignOperation::Assign,
+                        place: Expression::Identifier(Identifier {
+                            name: new_name,
+                            span: Default::default(),
+                        }),
+                        value: ternary,
+                        span: Default::default(),
+                    }));
+                    self.phi_functions.push(assignment);
+                }
+                None => (),
+            }
         }
 
         Statement::Conditional(ConditionalStatement {
@@ -185,10 +189,11 @@ impl<'a> StatementReconstructor for StaticSingleAssigner<'a> {
                         }
                         Expression::Binary(..) | Expression::Unary(..) | Expression::Ternary(..) => {
                             // Create a fresh variable name for the condition.
-                            let symbol_string = format!("cond${}", self.get_unique_id());
+                            let symbol= Symbol::intern(&format!("cond${}", self.get_unique_id()));
+                            self.rename_table.update(symbol, symbol);
 
                             // Initialize a new `AssignStatement` for the condition.
-                            let place = Expression::Identifier(Identifier::new(Symbol::intern(&symbol_string)));
+                            let place = Expression::Identifier(Identifier::new(symbol));
                             let assign_statement = Statement::Assign(Box::new(AssignStatement {
                                 operation: AssignOperation::Assign,
                                 place: place.clone(),
