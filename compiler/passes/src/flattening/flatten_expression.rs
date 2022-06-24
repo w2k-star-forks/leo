@@ -35,28 +35,6 @@ impl<'a> ExpressionReconstructor for Flattener<'a> {
         (Expression::Identifier(input), val)
     }
 
-    fn reconstruct_unary(&mut self, input: UnaryExpression) -> (Expression, Self::AdditionalOutput) {
-        let (receiver, v) = if matches!(&input.op, &UnaryOperation::Negate) {
-            let prior_negate_state = self.negate;
-            self.negate = true;
-            let (receiver, v) = self.reconstruct_expression(*input.receiver);
-            self.negate = prior_negate_state;
-
-            (receiver, v)
-        } else {
-            self.reconstruct_expression(*input.receiver)
-        };
-
-        (
-            Expression::Unary(UnaryExpression {
-                receiver: Box::new(receiver),
-                op: input.op,
-                span: input.span,
-            }),
-            v,
-        )
-    }
-
     fn reconstruct_literal(&mut self, input: LiteralExpression) -> (Expression, Self::AdditionalOutput) {
         let value = match input.clone() {
             LiteralExpression::Address(val, span) => Value::Address(val, span),
@@ -83,21 +61,6 @@ impl<'a> ExpressionReconstructor for Flattener<'a> {
         };
 
         (Expression::Literal(input), Some(value))
-    }
-
-    fn reconstruct_call(&mut self, input: CallExpression) -> (Expression, Self::AdditionalOutput) {
-        (
-            Expression::Call(CallExpression {
-                function: input.function,
-                arguments: input
-                    .arguments
-                    .into_iter()
-                    .map(|arg| self.reconstruct_expression(arg).0)
-                    .collect(),
-                span: input.span,
-            }),
-            None,
-        )
     }
 
     fn reconstruct_binary(&mut self, input: BinaryExpression) -> (Expression, Self::AdditionalOutput) {
@@ -170,5 +133,42 @@ impl<'a> ExpressionReconstructor for Flattener<'a> {
             }
             _ => (Expression::Binary(input), None),
         }
+    }
+
+    fn reconstruct_unary(&mut self, input: UnaryExpression) -> (Expression, Self::AdditionalOutput) {
+        let (receiver, v) = if matches!(&input.op, &UnaryOperation::Negate) {
+            let prior_negate_state = self.negate;
+            self.negate = true;
+            let (receiver, v) = self.reconstruct_expression(*input.receiver);
+            self.negate = prior_negate_state;
+
+            (receiver, v)
+        } else {
+            self.reconstruct_expression(*input.receiver)
+        };
+
+        (
+            Expression::Unary(UnaryExpression {
+                receiver: Box::new(receiver),
+                op: input.op,
+                span: input.span,
+            }),
+            v,
+        )
+    }
+
+    fn reconstruct_call(&mut self, input: CallExpression) -> (Expression, Self::AdditionalOutput) {
+        (
+            Expression::Call(CallExpression {
+                function: input.function,
+                arguments: input
+                    .arguments
+                    .into_iter()
+                    .map(|arg| self.reconstruct_expression(arg).0)
+                    .collect(),
+                span: input.span,
+            }),
+            None,
+        )
     }
 }

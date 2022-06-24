@@ -22,6 +22,37 @@ use leo_errors::FlattenError;
 use crate::{Declaration, Flattener, Value, VariableSymbol};
 
 impl<'a> StatementReconstructor for Flattener<'a> {
+    fn reconstruct_definition(&mut self, input: DefinitionStatement) -> Statement {
+        let (value, const_val) = self.reconstruct_expression(input.value);
+        let mut st = self.symbol_table.borrow_mut();
+
+        if let Some(const_val) = const_val {
+            if !st.set_variable(&input.variable_name.identifier.name, const_val.clone()) {
+                if let Err(err) = st.insert_variable(
+                    input.variable_name.identifier.name,
+                    VariableSymbol {
+                        type_: (&const_val).into(),
+                        span: input.variable_name.identifier.span,
+                        declaration: match &input.declaration_type {
+                            Declare::Const => Declaration::Const(Some(const_val.clone())),
+                            Declare::Let => Declaration::Mut(Some(const_val.clone())),
+                        },
+                    },
+                ) {
+                    self.handler.emit_err(err);
+                }
+            }
+        }
+
+        Statement::Definition(DefinitionStatement {
+            declaration_type: input.declaration_type,
+            variable_name: input.variable_name.clone(),
+            type_: input.type_,
+            value,
+            span: input.span,
+        })
+    }
+
     fn reconstruct_assign(&mut self, input: AssignStatement) -> Statement {
         let place = self.reconstruct_expression(input.place).0;
         let var_name = if let Expression::Identifier(var) = place {
@@ -52,37 +83,6 @@ impl<'a> StatementReconstructor for Flattener<'a> {
             value,
             span: input.span,
         }))
-    }
-
-    fn reconstruct_definition(&mut self, input: DefinitionStatement) -> Statement {
-        let (value, const_val) = self.reconstruct_expression(input.value);
-        let mut st = self.symbol_table.borrow_mut();
-
-        if let Some(const_val) = const_val {
-            if !st.set_variable(&input.variable_name.identifier.name, const_val.clone()) {
-                if let Err(err) = st.insert_variable(
-                    input.variable_name.identifier.name,
-                    VariableSymbol {
-                        type_: (&const_val).into(),
-                        span: input.variable_name.identifier.span,
-                        declaration: match &input.declaration_type {
-                            Declare::Const => Declaration::Const(Some(const_val.clone())),
-                            Declare::Let => Declaration::Mut(Some(const_val.clone())),
-                        },
-                    },
-                ) {
-                    self.handler.emit_err(err);
-                }
-            }
-        }
-
-        Statement::Definition(DefinitionStatement {
-            declaration_type: input.declaration_type,
-            variable_name: input.variable_name.clone(),
-            type_: input.type_,
-            value,
-            span: input.span,
-        })
     }
 
     fn reconstruct_conditional(&mut self, input: ConditionalStatement) -> Statement {
