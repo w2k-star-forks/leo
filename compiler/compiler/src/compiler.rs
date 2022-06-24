@@ -91,13 +91,11 @@ impl<'a> Compiler<'a> {
         let prg_sf = with_session_globals(|s| s.source_map.new_source(program_string, name));
 
         // Use the parser to construct the abstract syntax tree (ast).
-        let ast: leo_ast::Ast = leo_parser::parse_ast(self.handler, &prg_sf.src, prg_sf.start_pos)?;
+        self.ast = leo_parser::parse_ast(self.handler, &prg_sf.src, prg_sf.start_pos)?;
 
         if self.output_options.ast_initial {
             self.write_ast_to_json("initial_ast.json")?;
         }
-
-        self.ast = ast;
 
         Ok(())
     }
@@ -121,8 +119,15 @@ impl<'a> Compiler<'a> {
             // Parse and serialize it.
             let input_ast = leo_parser::parse_input(self.handler, &input_sf.src, input_sf.start_pos)?;
 
-            if self.output_options.ast_initial {
-                self.write_ast_to_json("initial_input_ast.json")?;
+            // Write the input AST snapshot post parsing.
+            if self.output_options.spans_enabled {
+                input_ast.to_json_file(self.output_directory.clone(), "initial_input_ast.json")?;
+            } else {
+                input_ast.to_json_file_without_keys(
+                    self.output_directory.clone(),
+                    "initial_input_ast.json",
+                    &["span"],
+                )?;
             }
 
             self.input_ast = Some(input_ast);
@@ -150,7 +155,7 @@ impl<'a> Compiler<'a> {
     pub fn flattening_pass(&mut self, symbol_table: SymbolTable) -> Result<()> {
         self.ast = Flattener::do_pass((std::mem::take(&mut self.ast), self.handler, symbol_table))?;
 
-        if self.output_options.ast_initial {
+        if self.output_options.flattened_ast {
             self.write_ast_to_json("flattened_ast.json")?;
         }
 
@@ -218,8 +223,7 @@ impl<'a> Compiler<'a> {
         if self.output_options.spans_enabled {
             self.ast.to_json_file(self.output_directory.clone(), file_name)?;
         } else {
-            self.ast
-                .to_json_file_without_keys(self.output_directory.clone(), file_name, &["span"])?;
+            self.ast.to_json_file_without_keys(self.output_directory.clone(), file_name, &["span"])?;
         }
         Ok(())
     }
