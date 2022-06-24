@@ -32,9 +32,6 @@ pub use flattening::*;
 pub mod dead_code_elimination;
 pub use dead_code_elimination::*;
 
-pub mod flatten_conditionals;
-pub use flatten_conditionals::*;
-
 pub mod pass;
 pub use self::pass::*;
 

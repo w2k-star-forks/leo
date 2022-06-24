@@ -170,20 +170,6 @@ impl<'a> Compiler<'a> {
         Ok(())
     }
 
-    // TODO: See if this pass can be integrated into the SSA or DCE pass.
-    ///
-    /// Runs a compiler pass that flattens conditional statements.
-    ///
-    pub fn conditional_statement_flattening_pass(&mut self) -> Result<()> {
-        self.ast = ConditionalStatementFlattener::do_pass(std::mem::take(&mut self.ast))?;
-
-        if self.output_options.flattened_conditional_ast {
-            self.write_ast_to_json("flattened_conditional_ast.json")?;
-        }
-
-        Ok(())
-    }
-
     ///
     /// Runs the dead code elimination pass.
     ///
@@ -209,8 +195,7 @@ impl<'a> Compiler<'a> {
 
         self.static_single_assignment_pass()?;
 
-        self.conditional_statement_flattening_pass()?;
-
+        // TODO: Make this pass optional.
         self.dead_code_elimination_pass()?;
 
         Ok(())

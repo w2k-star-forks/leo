@@ -26,8 +26,6 @@ pub struct OutputOptions {
     pub flattened_ast: bool,
     /// If enabled, write the AST after it has been converted to SSA form.
     pub ssa_ast: bool,
-    /// If enabled, write the AST after conditional statements have been flattened.
-    pub flattened_conditional_ast: bool,
     /// If enabled, write the AST after dead code has been eliminated.
     pub dead_code_eliminated_ast: bool,
 }

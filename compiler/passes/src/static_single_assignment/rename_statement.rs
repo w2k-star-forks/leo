@@ -172,7 +172,7 @@ impl<'a> StatementReconstructor for StaticSingleAssigner<'a> {
         for statement in block.statements.into_iter() {
             match statement {
                 Statement::Conditional(conditional_statement) => {
-                    match conditional_statement.condition {
+                    let reconstructed_statement = match conditional_statement.condition {
                         // TODO: Do we have a better way of handling unreachable errors?
                         Expression::Call(..) => {
                             unreachable!("Call expressions should not exist in the AST at this stage of compilation.")
@@ -181,7 +181,7 @@ impl<'a> StatementReconstructor for StaticSingleAssigner<'a> {
                             unreachable!("Err expressions should not exist in the AST at this stage of compilation.")
                         }
                         Expression::Identifier(..) | Expression::Literal(..) => {
-                            statements.push(self.reconstruct_conditional(conditional_statement))
+                            self.reconstruct_conditional(conditional_statement)
                         }
                         Expression::Binary(..) | Expression::Unary(..) | Expression::Ternary(..) => {
                             // Create a fresh variable name for the condition.
@@ -202,9 +202,21 @@ impl<'a> StatementReconstructor for StaticSingleAssigner<'a> {
                                 span: conditional_statement.span,
                             };
                             statements.push(assign_statement);
-                            statements.push(self.reconstruct_conditional(rewritten_conditional_statement));
+                            self.reconstruct_conditional(rewritten_conditional_statement)
                         }
                     };
+
+                    // Flatten the reconstructed `ConditionalStatement` by lifting the statements in the "if" and "else" block
+                    // into the current `BlockStatement`.
+                    let mut conditional_statement = match reconstructed_statement {
+                        Statement::Conditional(conditional_statement) => conditional_statement,
+                        _ => unreachable!("`reconstruct_conditional` will always produce a `ConditionalStatement`"),
+                    };
+                    statements.append(&mut conditional_statement.block.statements);
+                    if let Some(statement) = conditional_statement.next {
+                        statements.push(*statement)
+                    }
+
                     statements.append(&mut self.clear_phi_functions());
                 }
                 _ => statements.push(self.reconstruct_statement(statement)),

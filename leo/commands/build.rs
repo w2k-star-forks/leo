@@ -58,7 +58,6 @@ impl From<BuildOptions> for OutputOptions {
             ast_initial: options.enable_initial_ast_snapshot,
             flattened_ast: options.enable_flattened_ast_snapshot,
             ssa_ast: options.enable_ssa_ast_snapshot,
-            flattened_conditional_ast: options.enable_conditional_flattened_ast_snapshot,
             dead_code_eliminated_ast: options.enable_dce_ast_snapshot,
         };
         if options.enable_all_ast_snapshots {
@@ -66,7 +65,6 @@ impl From<BuildOptions> for OutputOptions {
             out_options.ast_initial = true;
             out_options.flattened_ast = true;
             out_options.ssa_ast = true;
-            out_options.flattened_conditional_ast = true;
             out_options.dead_code_eliminated_ast = true;
         }
 
