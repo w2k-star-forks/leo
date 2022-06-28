@@ -17,7 +17,7 @@
 use std::cell::RefCell;
 
 use leo_ast::*;
-use leo_errors::FlattenError;
+use leo_errors::{FlattenError, TypeCheckerError};
 
 use crate::{Declaration, Flattener, Value, VariableSymbol};
 
@@ -53,11 +53,25 @@ impl<'a> StatementReconstructor for Flattener<'a> {
                     self.handler.emit_err(err);
                 }
             }
+        } else if const_val.is_none() && self.create_iter_scopes {
+            if let Err(err) = st.insert_variable(
+                input.variable_name.identifier.name,
+                VariableSymbol {
+                    type_: input.type_,
+                    span: input.variable_name.identifier.span,
+                    declaration: match &input.declaration_type {
+                        Declare::Const => Declaration::Const(None),
+                        Declare::Let => Declaration::Mut(None),
+                    },
+                },
+            ) {
+                self.handler.emit_err(err);
+            }
         }
 
         Statement::Definition(DefinitionStatement {
             declaration_type: input.declaration_type,
-            variable_name: input.variable_name.clone(),
+            variable_name: input.variable_name,
             type_: input.type_,
             value: map_const((value, const_val)),
             span: input.span,
@@ -65,12 +79,27 @@ impl<'a> StatementReconstructor for Flattener<'a> {
     }
 
     fn reconstruct_assign(&mut self, input: AssignStatement) -> Statement {
-        let place = self.reconstruct_expression(input.place).0;
-        let var_name = if let Expression::Identifier(var) = place {
+        let (place_expr, place_const) = self.reconstruct_expression(input.place);
+        let var_name = if let Expression::Identifier(var) = place_expr {
             var.name
         } else {
             unreachable!()
         };
+
+        if place_const.is_some() {
+            if let Some(var) = self.symbol_table.borrow().lookup_variable(&var_name) {
+                match &var.declaration {
+                    Declaration::Const(_) => self.handler.emit_err(TypeCheckerError::cannot_assign_to_const_var(
+                        var_name,
+                        place_expr.span(),
+                    )),
+                    Declaration::Input(_, ParamMode::Const) => self.handler.emit_err(
+                        TypeCheckerError::cannot_assign_to_const_input(var_name, place_expr.span()),
+                    ),
+                    _ => {}
+                }
+            }
+        }
 
         let (value, const_val) = self.reconstruct_expression(input.value);
 
@@ -84,13 +113,13 @@ impl<'a> StatementReconstructor for Flattener<'a> {
                 st.deconstify_variable(&var_name);
                 st.locally_constify_variable(var_name, c);
             }
-        } else if !var_in_local {
+        } else if const_val.is_none() {
             st.deconstify_variable(&var_name);
         }
 
         Statement::Assign(Box::new(AssignStatement {
             operation: input.operation,
-            place,
+            place: place_expr,
             value: map_const((value, const_val)),
             span: input.span,
         }))
@@ -101,16 +130,51 @@ impl<'a> StatementReconstructor for Flattener<'a> {
 
         let prev_non_const_block = self.non_const_block;
         self.non_const_block = const_value.is_none() || prev_non_const_block;
-        let block = self.reconstruct_block(input.block);
-        let next = input.next.map(|n| Box::new(self.reconstruct_statement(*n)));
-        self.non_const_block = prev_non_const_block;
 
-        Statement::Conditional(ConditionalStatement {
-            condition: map_const((condition, const_value)),
-            block,
-            next,
-            span: input.span,
-        })
+        // TODO: in future if symbol table is used for other passes.
+        // We will have to remove these scopes instead of skipping over them.
+        let out = match const_value {
+            Some(Value::Boolean(true, _)) => {
+                let block = Statement::Block(self.reconstruct_block(input.block));
+                if input.next.is_some() {
+                    self.block_index += 1;
+                }
+                let mut next = input.next;
+                while let Some(Statement::Conditional(c)) = next.as_deref() {
+                    if c.next.is_some() {
+                        self.block_index += 1;
+                    }
+                    next = c.next.clone();
+                }
+
+                block
+            }
+            Some(Value::Boolean(false, _)) if input.next.is_some() => {
+                self.block_index += 1;
+                self.reconstruct_statement(*input.next.unwrap())
+            }
+            Some(Value::Boolean(false, _)) => {
+                self.block_index += 1;
+                // TODO: creates empty block, should instead figure out how to return none here.
+                Statement::Block(Block {
+                    statements: Vec::new(),
+                    span: input.span,
+                })
+            }
+            _ => {
+                let block = self.reconstruct_block(input.block);
+                let next = input.next.map(|n| Box::new(self.reconstruct_statement(*n)));
+                Statement::Conditional(ConditionalStatement {
+                    condition,
+                    block,
+                    next,
+                    span: input.span,
+                })
+            }
+        };
+
+        self.non_const_block = prev_non_const_block;
+        out
     }
 
     fn reconstruct_iteration(&mut self, input: IterationStatement) -> Statement {
@@ -156,7 +220,7 @@ impl<'a> StatementReconstructor for Flattener<'a> {
                     Default::default()
                 };
 
-                return Statement::Block(Block {
+                let iter_blocks = Statement::Block(Block {
                     statements: range
                         .into_iter()
                         .map(|iter_var| {
@@ -179,6 +243,7 @@ impl<'a> StatementReconstructor for Flattener<'a> {
                                 },
                             );
 
+                            self.create_iter_scopes = true;
                             let block = Statement::Block(Block {
                                 statements: input
                                     .block
@@ -189,6 +254,7 @@ impl<'a> StatementReconstructor for Flattener<'a> {
                                     .collect(),
                                 span: input.block.span,
                             });
+                            self.create_iter_scopes = false;
 
                             self.symbol_table.borrow_mut().variables.remove(&input.variable.name);
 
@@ -201,6 +267,8 @@ impl<'a> StatementReconstructor for Flattener<'a> {
                         .collect(),
                     span: input.span,
                 });
+                self.block_index += 1;
+                return iter_blocks;
             }
             (None, Some(_)) => self
                 .handler
@@ -250,7 +318,12 @@ impl<'a> StatementReconstructor for Flattener<'a> {
     }
 
     fn reconstruct_block(&mut self, input: Block) -> Block {
-        let current_block = self.block_index;
+        let current_block = if self.create_iter_scopes {
+            self.symbol_table.borrow_mut().insert_block()
+        } else {
+            self.block_index
+        };
+
         let prev_st = std::mem::take(&mut self.symbol_table);
         self.symbol_table
             .swap(prev_st.borrow().get_block_scope(current_block).unwrap());
@@ -269,8 +342,7 @@ impl<'a> StatementReconstructor for Flattener<'a> {
         let prev_st = *self.symbol_table.borrow_mut().parent.take().unwrap();
         self.symbol_table.swap(prev_st.get_block_scope(current_block).unwrap());
         self.symbol_table = RefCell::new(prev_st);
-        self.block_index = current_block;
-        self.block_index += 1;
+        self.block_index = current_block + 1;
 
         b
     }

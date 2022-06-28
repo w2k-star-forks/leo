@@ -99,6 +99,7 @@ impl Namespace for CompileNamespace {
 #[derive(Deserialize, PartialEq, Serialize)]
 struct OutputItem {
     pub initial_input_ast: String,
+    pub flattened_ast: String,
 }
 
 #[derive(Deserialize, PartialEq, Serialize)]
@@ -198,20 +199,25 @@ fn run_test(test: Test, handler: &Handler, err_buf: &BufferEmitter) -> Result<Va
     let mut output_items = Vec::with_capacity(inputs.len());
 
     if inputs.is_empty() {
+        handler.extend_if_error(compile_and_process(&mut parsed))?;
         output_items.push(OutputItem {
             initial_input_ast: "no input".to_string(),
+            flattened_ast: hash_file("/tmp/output/flattened_ast.json"),
         });
     } else {
         for input in inputs {
             let mut parsed = parsed.clone();
             handler.extend_if_error(parsed.parse_input(input))?;
+            handler.extend_if_error(compile_and_process(&mut parsed))?;
             let initial_input_ast = hash_file("/tmp/output/initial_input_ast.json");
+            let flattened_ast = hash_file("/tmp/output/flattened_ast.json");
 
-            output_items.push(OutputItem { initial_input_ast });
+            output_items.push(OutputItem {
+                initial_input_ast,
+                flattened_ast,
+            });
         }
     }
-
-    handler.extend_if_error(compile_and_process(&mut parsed))?;
 
     let initial_ast = hash_file("/tmp/output/initial_ast.json");
 

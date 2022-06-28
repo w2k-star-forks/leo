@@ -1,7 +1,5 @@
 ---
 namespace: Compile
-expectation: Pass
+expectation: Fail
 outputs:
-  - output:
-      - initial_input_ast: 7643261a1792f68251258ad1b6be18e95528a86816b3772140d130b2784736cb
-    initial_ast: 18fd2f76fa88e458702bbfa24da0b8f2cd06221dedabd838227450653314e28f
+  - "Error [EFLA0373001]: The const operation `-32768i16 neg` causes an overflow.\n    --> compiler-test:5:21\n     |\n   5 |     const b: i16 = -a;\n     |                     ^\nError [EFLA0373001]: The const operation `-32768i16 neg` causes an overflow.\n    --> compiler-test:6:19\n     |\n   6 |     return (b == -a) == y;\n     |                   ^\n"

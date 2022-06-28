@@ -1,5 +1,0 @@
----
-namespace: Compile
-expectation: Fail
-outputs:
-  - "Error [ETYC0372006]: Unknown variable `b`\n    --> compiler-test:5:8\n     |\n   5 |     if b {\n     |        ^\n"

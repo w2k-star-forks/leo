@@ -19,7 +19,9 @@ use std::cell::RefCell;
 use leo_ast::*;
 use leo_errors::TypeCheckerError;
 
-use crate::{Declaration, TypeChecker, TypeOutput, VariableSymbol};
+use crate::{Declaration, TypeChecker, VariableSymbol};
+
+use super::type_output::TypeOutput;
 
 impl<'a> StatementVisitor<'a> for TypeChecker<'a> {
     fn visit_return(&mut self, input: &'a ReturnStatement) {
@@ -43,9 +45,10 @@ impl<'a> StatementVisitor<'a> for TypeChecker<'a> {
             type_: input.type_,
             span: input.span(),
             declaration: match output {
-                TypeOutput::Const(c) if input.declaration_type.is_const() => Declaration::Const(Some(c)),
-                TypeOutput::Const(c) => Declaration::Mut(Some(c)),
-                TypeOutput::Type(_) if input.declaration_type.is_const() => {
+                TypeOutput::Const(c) | TypeOutput::Lit(c) if input.declaration_type.is_const() => {
+                    Declaration::Const(Some(c))
+                }
+                TypeOutput::MutType(_) if input.declaration_type.is_const() => {
                     self.handler
                         .emit_err(TypeCheckerError::cannot_define_const_with_non_const(
                             input.variable_name.identifier.name,
@@ -53,15 +56,17 @@ impl<'a> StatementVisitor<'a> for TypeChecker<'a> {
                         ));
                     Declaration::Const(None)
                 }
-                _ if input.declaration_type.is_const() => Declaration::Const(None),
+                TypeOutput::Const(c) | TypeOutput::Lit(c) | TypeOutput::Mut(c) => Declaration::Mut(Some(c)),
+                TypeOutput::ConstType(_) | TypeOutput::LitType(_) | TypeOutput::MutType(_)
+                if input.declaration_type.is_const() =>
+                    {
+                        Declaration::Const(None)
+                    }
                 _ => Declaration::Mut(None),
             },
         };
-        if let Err(err) = self
-            .symbol_table
-            .borrow_mut()
-            .insert_variable(input.variable_name.identifier.name, var)
-        {
+
+        if let Err(err) = self.symbol_table.borrow_mut().insert_variable(input.variable_name.identifier.name, var) {
             self.handler.emit_err(err);
         }
     }
@@ -76,22 +81,7 @@ impl<'a> StatementVisitor<'a> for TypeChecker<'a> {
             }
         };
 
-        let var_in_parent = self.symbol_table.borrow().variable_in_parent_scope(&var_name.name);
         let var_type = if let Some(var) = self.symbol_table.borrow_mut().lookup_variable_mut(&var_name.name) {
-            match &var.declaration {
-                Declaration::Const(_) => self.handler.emit_err(TypeCheckerError::cannot_assign_to_const_var(
-                    var_name,
-                    input.place.span(),
-                )),
-                Declaration::Input(ParamMode::Const) => self.handler.emit_err(
-                    TypeCheckerError::cannot_assign_to_const_input(var_name, input.place.span()),
-                ),
-                Declaration::Mut(_) if self.non_const_block && var_in_parent => {
-                    var.declaration = Declaration::Mut(None);
-                }
-                _ => {}
-            }
-
             Some(var.type_)
         } else {
             self.handler
@@ -102,24 +92,16 @@ impl<'a> StatementVisitor<'a> for TypeChecker<'a> {
 
         if var_type.is_some() {
             self.validate_ident_type(&var_type);
-            if let TypeOutput::Const(const_val) = self.visit_expression(&input.value, &var_type) {
-                if self.non_const_block && var_in_parent {
-                    self.symbol_table.borrow_mut().set_variable(&var_name.name, const_val);
-                }
-            }
         }
     }
 
     fn visit_conditional(&mut self, input: &'a ConditionalStatement) {
-        let output = self.visit_expression(&input.condition, &Some(Type::Boolean));
+        self.visit_expression(&input.condition, &Some(Type::Boolean));
 
-        let prev_non_const_block = self.non_const_block;
-        self.non_const_block = !matches!(output, TypeOutput::Const(_)) || prev_non_const_block;
         self.visit_block(&input.block);
         if let Some(s) = input.next.as_ref() {
             self.visit_statement(s)
         }
-        self.non_const_block = prev_non_const_block;
     }
 
     fn visit_iteration(&mut self, input: &'a IterationStatement) {
@@ -136,7 +118,23 @@ impl<'a> StatementVisitor<'a> for TypeChecker<'a> {
             },
         );
 
-        self.visit_block(&input.block);
+        let scope_index = self.symbol_table.borrow_mut().insert_block();
+        let prev_st = std::mem::take(&mut self.symbol_table);
+        self.symbol_table
+            .swap(prev_st.borrow().get_block_scope(scope_index).unwrap());
+        self.symbol_table.borrow_mut().parent = Some(Box::new(prev_st.into_inner()));
+
+        input.block.statements.iter().for_each(|s| self.visit_statement(s));
+        // Keep the iteration scope but empty it .
+        // As it will just become a block of block scopes later on.
+        // Makes it easier to avoid conflicts.
+        self.symbol_table.borrow_mut().variables.clear();
+        self.symbol_table.borrow_mut().scopes.clear();
+        self.symbol_table.borrow_mut().scope_index = 0;
+
+        let prev_st = *self.symbol_table.borrow_mut().parent.take().unwrap();
+        self.symbol_table.swap(prev_st.get_block_scope(scope_index).unwrap());
+        self.symbol_table = RefCell::new(prev_st);
 
         if let Err(err) = inserted {
             self.handler.emit_err(err);

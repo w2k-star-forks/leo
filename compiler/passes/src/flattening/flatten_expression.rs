@@ -27,12 +27,59 @@ impl<'a> ExpressionReconstructor for Flattener<'a> {
         let var = st.lookup_variable(&input.name).unwrap();
 
         let val = if let Declaration::Const(Some(c)) | Declaration::Mut(Some(c)) = &var.declaration {
-            Some(c.clone())
+            if self.negate {
+                match c.clone().neg(input.span) {
+                    Ok(c) => Some(c),
+                    Err(err) => {
+                        self.handler.emit_err(err);
+                        Some(c.clone())
+                    }
+                }
+            } else {
+                Some(c.clone())
+            }
         } else {
             None
         };
 
         (Expression::Identifier(input), val)
+    }
+
+    fn reconstruct_unary(&mut self, input: UnaryExpression) -> (Expression, Self::AdditionalOutput) {
+        let (receiver, val) = if matches!(input.op, UnaryOperation::Negate) {
+            let prior_negate_state = self.negate;
+            self.negate = !self.negate;
+            let ret = self.reconstruct_expression(*input.receiver.clone());
+            self.negate = prior_negate_state;
+            ret
+        } else {
+            self.reconstruct_expression(*input.receiver.clone())
+        };
+
+        let out = match (val, input.op) {
+            (Some(v), UnaryOperation::Abs) if v.is_supported_const_fold_type() => Some(v.abs(input.span)).transpose(),
+            (Some(v), UnaryOperation::AbsWrapped) if v.is_supported_const_fold_type() => {
+                Some(v.abs_wrapped(input.span)).transpose()
+            }
+            (Some(v), UnaryOperation::Negate) if v.is_supported_const_fold_type() => Ok(Some(v)),
+            (Some(v), UnaryOperation::Not) if v.is_supported_const_fold_type() => Some(v.not(input.span)).transpose(),
+            _ => Ok(None),
+        };
+
+        match out {
+            Ok(v) => (
+                Expression::Unary(UnaryExpression {
+                    receiver: Box::new(receiver),
+                    op: input.op,
+                    span: input.span,
+                }),
+                v,
+            ),
+            Err(e) => {
+                self.handler.emit_err(e);
+                (Expression::Unary(input), None)
+            }
+        }
     }
 
     fn reconstruct_literal(&mut self, input: LiteralExpression) -> (Expression, Self::AdditionalOutput) {
@@ -41,18 +88,21 @@ impl<'a> ExpressionReconstructor for Flattener<'a> {
             LiteralExpression::Boolean(val, span) => Value::Boolean(val, span),
             LiteralExpression::Field(val, span) => Value::Field(val, span),
             LiteralExpression::Group(val) => Value::Group(val),
-            LiteralExpression::Integer(itype, istr, span) => match itype {
-                IntegerType::U8 => Value::U8(istr.parse().unwrap(), span),
-                IntegerType::U16 => Value::U16(istr.parse().unwrap(), span),
-                IntegerType::U32 => Value::U32(istr.parse().unwrap(), span),
-                IntegerType::U64 => Value::U64(istr.parse().unwrap(), span),
-                IntegerType::U128 => Value::U128(istr.parse().unwrap(), span),
-                IntegerType::I8 => Value::I8(istr.parse().unwrap(), span),
-                IntegerType::I16 => Value::I16(istr.parse().unwrap(), span),
-                IntegerType::I32 => Value::I32(istr.parse().unwrap(), span),
-                IntegerType::I64 => Value::I64(istr.parse().unwrap(), span),
-                IntegerType::I128 => Value::I128(istr.parse().unwrap(), span),
-            },
+            LiteralExpression::Integer(itype, istr, span) => {
+                let istr = if self.negate { format!("-{istr}") } else { istr };
+                match itype {
+                    IntegerType::U8 => Value::U8(istr.parse().unwrap(), span),
+                    IntegerType::U16 => Value::U16(istr.parse().unwrap(), span),
+                    IntegerType::U32 => Value::U32(istr.parse().unwrap(), span),
+                    IntegerType::U64 => Value::U64(istr.parse().unwrap(), span),
+                    IntegerType::U128 => Value::U128(istr.parse().unwrap(), span),
+                    IntegerType::I8 => Value::I8(istr.parse().unwrap(), span),
+                    IntegerType::I16 => Value::I16(istr.parse().unwrap(), span),
+                    IntegerType::I32 => Value::I32(istr.parse().unwrap(), span),
+                    IntegerType::I64 => Value::I64(istr.parse().unwrap(), span),
+                    IntegerType::I128 => Value::I128(istr.parse().unwrap(), span),
+                }
+            }
             LiteralExpression::Scalar(val, span) => Value::Scalar(val, span),
             LiteralExpression::String(val, span) => Value::String(val, span),
         };
@@ -60,9 +110,13 @@ impl<'a> ExpressionReconstructor for Flattener<'a> {
         (Expression::Literal(input), Some(value))
     }
 
+    fn reconstruct_call(&mut self, _: CallExpression) -> (Expression, Self::AdditionalOutput) {
+        unimplemented!("Flattening functions not yet implemented")
+    }
+
     fn reconstruct_binary(&mut self, input: BinaryExpression) -> (Expression, Self::AdditionalOutput) {
-        let (_, left_const_value) = self.reconstruct_expression(*input.left.clone());
-        let (_, right_const_value) = self.reconstruct_expression(*input.right.clone());
+        let (left_expr, left_const_value) = self.reconstruct_expression(*input.left.clone());
+        let (right_expr, right_const_value) = self.reconstruct_expression(*input.right.clone());
 
         match (left_const_value, right_const_value) {
             (Some(left_value), Some(right_value))
@@ -70,6 +124,24 @@ impl<'a> ExpressionReconstructor for Flattener<'a> {
                 {
                     (Expression::Binary(input), None)
                 }
+            (Some(const_value), None) => (
+                Expression::Binary(BinaryExpression {
+                    left: Box::new(Expression::Literal(const_value.into())),
+                    right: Box::new(right_expr),
+                    op: input.op,
+                    span: input.span,
+                }),
+                None,
+            ),
+            (None, Some(const_value)) => (
+                Expression::Binary(BinaryExpression {
+                    left: Box::new(left_expr),
+                    right: Box::new(Expression::Literal(const_value.into())),
+                    op: input.op,
+                    span: input.span,
+                }),
+                None,
+            ),
             (Some(left_value), Some(right_value)) => {
                 let value = match &input.op {
                     BinaryOperation::Add => left_value.add(right_value, input.span),
@@ -122,54 +194,48 @@ impl<'a> ExpressionReconstructor for Flattener<'a> {
 
                 if let Err(err) = value {
                     self.handler.emit_err(err);
-                    (Expression::Binary(input), None)
+                    (
+                        Expression::Binary(BinaryExpression {
+                            left: Box::new(left_expr),
+                            right: Box::new(right_expr),
+                            op: input.op,
+                            span: input.span,
+                        }),
+                        None,
+                    )
                 } else {
                     let value = value.unwrap();
                     (Expression::Literal(value.clone().into()), Some(value))
                 }
             }
-            _ => (Expression::Binary(input), None),
-        }
-    }
-
-    fn reconstruct_unary(&mut self, input: UnaryExpression) -> (Expression, Self::AdditionalOutput) {
-        let (receiver, val) = self.reconstruct_expression(*input.receiver.clone());
-        let out = match (val, input.op) {
-            (Some(v), UnaryOperation::Negate) if v.is_supported_const_fold_type() => {
-                Some(v.neg(input.span)).transpose()
-            }
-            (Some(v), UnaryOperation::Not) if v.is_supported_const_fold_type() => Some(v.not(input.span)).transpose(),
-            _ => Ok(None),
-        };
-
-        match out {
-            Ok(v) => (
-                Expression::Unary(UnaryExpression {
-                    receiver: Box::new(receiver),
+            _ => (
+                Expression::Binary(BinaryExpression {
+                    left: Box::new(left_expr),
+                    right: Box::new(right_expr),
                     op: input.op,
                     span: input.span,
                 }),
-                v,
+                None,
             ),
-            Err(e) => {
-                self.handler.emit_err(e);
-                (Expression::Unary(input), None)
-            }
         }
     }
 
-    fn reconstruct_call(&mut self, input: CallExpression) -> (Expression, Self::AdditionalOutput) {
-        (
-            Expression::Call(CallExpression {
-                function: input.function,
-                arguments: input
-                    .arguments
-                    .into_iter()
-                    .map(|arg| self.reconstruct_expression(arg).0)
-                    .collect(),
-                span: input.span,
-            }),
-            None,
-        )
+    fn reconstruct_ternary(&mut self, input: TernaryExpression) -> (Expression, Self::AdditionalOutput) {
+        let (condition, const_cond) = self.reconstruct_expression(*input.condition);
+        let (if_true, const_if_true) = self.reconstruct_expression(*input.if_true);
+        let (if_false, const_if_false) = self.reconstruct_expression(*input.if_false);
+        match const_cond {
+            Some(Value::Boolean(true, _)) => (if_true, const_if_true),
+            Some(Value::Boolean(false, _)) => (if_false, const_if_false),
+            _ => (
+                Expression::Ternary(TernaryExpression {
+                    condition: Box::new(condition),
+                    if_true: Box::new(if_true),
+                    if_false: Box::new(if_false),
+                    span: input.span,
+                }),
+                None,
+            ),
+        }
     }
 }

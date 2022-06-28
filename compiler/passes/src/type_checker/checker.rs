@@ -22,7 +22,9 @@ use leo_core::*;
 use leo_errors::{emitter::Handler, TypeCheckerError};
 use leo_span::{Span, Symbol};
 
-use crate::{SymbolTable, TypeOutput, Value};
+use crate::SymbolTable;
+
+use super::type_output::TypeOutput;
 
 pub struct TypeChecker<'a> {
     pub(crate) symbol_table: RefCell<SymbolTable>,
@@ -30,7 +32,6 @@ pub struct TypeChecker<'a> {
     pub(crate) parent: Option<Symbol>,
     pub(crate) has_return: bool,
     pub(crate) negate: bool,
-    pub(crate) non_const_block: bool,
     pub(crate) account_types: IndexSet<Symbol>,
     pub(crate) algorithms_types: IndexSet<Symbol>,
 }
@@ -95,7 +96,6 @@ impl<'a> TypeChecker<'a> {
             parent: None,
             has_return: false,
             negate: false,
-            non_const_block: false,
             account_types: Account::types(),
             algorithms_types: Algorithms::types(),
         }
@@ -123,10 +123,10 @@ impl<'a> TypeChecker<'a> {
     }
 
     /// Returns the given type if it equals the expected type or the expected type is none.
-    pub(crate) fn assert_expected_option(
+    pub(crate) fn assert_expected_option<O: Into<TypeOutput>>(
         &self,
         type_: Type,
-        const_value: Option<Value>,
+        const_value: O,
         expected: &Option<Type>,
         span: Span,
     ) -> TypeOutput {
@@ -137,19 +137,20 @@ impl<'a> TypeChecker<'a> {
             }
         }
 
-        if let Some(v) = const_value {
-            TypeOutput::Const(v)
+        let to = const_value.into();
+        if to.is_const() {
+            to
         } else {
-            TypeOutput::Type(type_)
+            to.replace(type_)
         }
     }
 
     /// Returns the given `expected` type and emits an error if the `actual` type does not match.
     /// `span` should be the location of the expected type.
-    pub(crate) fn assert_expected_type(
+    pub(crate) fn assert_expected_type<O: Into<TypeOutput>>(
         &self,
         type_: &Option<Type>,
-        const_value: Option<Value>,
+        const_value: O,
         expected: Type,
         span: Span,
     ) -> TypeOutput {
@@ -160,10 +161,11 @@ impl<'a> TypeChecker<'a> {
             }
         }
 
-        if let Some(v) = const_value {
-            TypeOutput::Const(v)
+        let to = const_value.into();
+        if to.is_const() {
+            to
         } else {
-            TypeOutput::Type(expected)
+            to.replace(expected)
         }
     }
 
