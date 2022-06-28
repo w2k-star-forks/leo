@@ -189,7 +189,7 @@ impl<'a> StatementReconstructor for StaticSingleAssigner<'a> {
                         }
                         Expression::Binary(..) | Expression::Unary(..) | Expression::Ternary(..) => {
                             // Create a fresh variable name for the condition.
-                            let symbol= Symbol::intern(&format!("cond${}", self.get_unique_id()));
+                            let symbol = Symbol::intern(&format!("cond${}", self.get_unique_id()));
                             self.rename_table.update(symbol, symbol);
 
                             // Initialize a new `AssignStatement` for the condition.

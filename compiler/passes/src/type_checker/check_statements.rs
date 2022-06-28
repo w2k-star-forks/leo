@@ -58,15 +58,19 @@ impl<'a> StatementVisitor<'a> for TypeChecker<'a> {
                 }
                 TypeOutput::Const(c) | TypeOutput::Lit(c) | TypeOutput::Mut(c) => Declaration::Mut(Some(c)),
                 TypeOutput::ConstType(_) | TypeOutput::LitType(_) | TypeOutput::MutType(_)
-                if input.declaration_type.is_const() =>
-                    {
-                        Declaration::Const(None)
-                    }
+                    if input.declaration_type.is_const() =>
+                {
+                    Declaration::Const(None)
+                }
                 _ => Declaration::Mut(None),
             },
         };
 
-        if let Err(err) = self.symbol_table.borrow_mut().insert_variable(input.variable_name.identifier.name, var) {
+        if let Err(err) = self
+            .symbol_table
+            .borrow_mut()
+            .insert_variable(input.variable_name.identifier.name, var)
+        {
             self.handler.emit_err(err);
         }
     }

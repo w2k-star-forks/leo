@@ -100,6 +100,8 @@ impl Namespace for CompileNamespace {
 struct OutputItem {
     pub initial_input_ast: String,
     pub flattened_ast: String,
+    pub ssa_ast: String,
+    pub dce_ast: String,
 }
 
 #[derive(Deserialize, PartialEq, Serialize)]
@@ -203,6 +205,8 @@ fn run_test(test: Test, handler: &Handler, err_buf: &BufferEmitter) -> Result<Va
         output_items.push(OutputItem {
             initial_input_ast: "no input".to_string(),
             flattened_ast: hash_file("/tmp/output/flattened_ast.json"),
+            ssa_ast: hash_file("/tmp/output/ssa_ast.json"),
+            dce_ast: hash_file("/tmp/output/dce_ast.json"),
         });
     } else {
         for input in inputs {
@@ -211,10 +215,14 @@ fn run_test(test: Test, handler: &Handler, err_buf: &BufferEmitter) -> Result<Va
             handler.extend_if_error(compile_and_process(&mut parsed))?;
             let initial_input_ast = hash_file("/tmp/output/initial_input_ast.json");
             let flattened_ast = hash_file("/tmp/output/flattened_ast.json");
+            let ssa_ast = hash_file("/tmp/output/ssa_ast.json");
+            let dce_ast = hash_file("/tmp/output/dce_ast.json");
 
             output_items.push(OutputItem {
                 initial_input_ast,
                 flattened_ast,
+                ssa_ast,
+                dce_ast,
             });
         }
     }

@@ -182,7 +182,7 @@ impl<'a> Compiler<'a> {
         self.ast = DeadCodeEliminator::do_pass(std::mem::take(&mut self.ast))?;
 
         if self.output_options.dead_code_eliminated_ast {
-            self.write_ast_to_json("dead_code_eliminated_ast.json")?;
+            self.write_ast_to_json("dce_ast.json")?;
         }
 
         Ok(())
@@ -223,7 +223,8 @@ impl<'a> Compiler<'a> {
         if self.output_options.spans_enabled {
             self.ast.to_json_file(self.output_directory.clone(), file_name)?;
         } else {
-            self.ast.to_json_file_without_keys(self.output_directory.clone(), file_name, &["span"])?;
+            self.ast
+                .to_json_file_without_keys(self.output_directory.clone(), file_name, &["span"])?;
         }
         Ok(())
     }

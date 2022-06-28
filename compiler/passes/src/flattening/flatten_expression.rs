@@ -120,10 +120,10 @@ impl<'a> ExpressionReconstructor for Flattener<'a> {
 
         match (left_const_value, right_const_value) {
             (Some(left_value), Some(right_value))
-            if !left_value.is_supported_const_fold_type() && !right_value.is_supported_const_fold_type() =>
-                {
-                    (Expression::Binary(input), None)
-                }
+                if !left_value.is_supported_const_fold_type() && !right_value.is_supported_const_fold_type() =>
+            {
+                (Expression::Binary(input), None)
+            }
             (Some(const_value), None) => (
                 Expression::Binary(BinaryExpression {
                     left: Box::new(Expression::Literal(const_value.into())),
