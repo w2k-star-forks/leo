@@ -155,7 +155,6 @@ impl<'a> StatementReconstructor for Flattener<'a> {
             }
             Some(Value::Boolean(false, _)) => {
                 self.block_index += 1;
-                // TODO: creates empty block, should instead figure out how to return none here.
                 Statement::Block(Block {
                     statements: Vec::new(),
                     span: input.span,
@@ -220,6 +219,17 @@ impl<'a> StatementReconstructor for Flattener<'a> {
                     Default::default()
                 };
 
+                let scope_index = if self.create_iter_scopes {
+                    self.symbol_table.borrow_mut().insert_block()
+                } else {
+                    self.block_index
+                };
+                let prev_st = std::mem::take(&mut self.symbol_table);
+                self.symbol_table
+                    .swap(prev_st.borrow().get_block_scope(scope_index).unwrap());
+                self.symbol_table.borrow_mut().parent = Some(Box::new(prev_st.into_inner()));
+                self.block_index = 0;
+
                 let iter_blocks = Statement::Block(Block {
                     statements: range
                         .into_iter()
@@ -243,6 +253,7 @@ impl<'a> StatementReconstructor for Flattener<'a> {
                                 },
                             );
 
+                            let prev_create_iter_scopes = self.create_iter_scopes;
                             self.create_iter_scopes = true;
                             let block = Statement::Block(Block {
                                 statements: input
@@ -254,7 +265,7 @@ impl<'a> StatementReconstructor for Flattener<'a> {
                                     .collect(),
                                 span: input.block.span,
                             });
-                            self.create_iter_scopes = false;
+                            self.create_iter_scopes = prev_create_iter_scopes;
 
                             self.symbol_table.borrow_mut().variables.remove(&input.variable.name);
 
@@ -267,7 +278,11 @@ impl<'a> StatementReconstructor for Flattener<'a> {
                         .collect(),
                     span: input.span,
                 });
-                self.block_index += 1;
+                let prev_st = *self.symbol_table.borrow_mut().parent.take().unwrap();
+                self.symbol_table.swap(prev_st.get_block_scope(scope_index).unwrap());
+                self.symbol_table = RefCell::new(prev_st);
+                self.block_index = scope_index + 1;
+
                 return iter_blocks;
             }
             (None, Some(_)) => self
