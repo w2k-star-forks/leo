@@ -102,7 +102,15 @@ impl<'a> StatementReconstructor for StaticSingleAssigner<'a> {
         self.push();
         let next = conditional
             .next
-            .map(|condition| Box::new(self.reconstruct_statement(*condition)));
+            .map(|statement| Box::new(match *statement {
+                // The `ConditionalStatement` must be reconstructed as a `Block` statement to ensure that appropriate statements are produced.
+                Statement::Conditional(stmt) => { self.reconstruct_statement(Statement::Block(Block {
+                    statements: vec![Statement::Conditional(stmt)],
+                    span: Default::default()
+                }))}
+                Statement::Block(stmt) => { self.reconstruct_statement(Statement::Block(stmt)) }
+                _ => unreachable!("`ConditionalStatement`s next statement must be a `ConditionalStatement` or a `Block`."),
+            }));
 
         let else_table = self.pop();
 
@@ -219,7 +227,11 @@ impl<'a> StatementReconstructor for StaticSingleAssigner<'a> {
                     };
                     statements.append(&mut conditional_statement.block.statements);
                     if let Some(statement) = conditional_statement.next {
-                        statements.push(*statement)
+                        match *statement {
+                            // If we encounter a `BlockStatement` we need to lift its constituent statements into the current `BlockStatement`.
+                            Statement::Block(mut block) => statements.append(&mut block.statements),
+                            _ => statements.push(*statement),
+                        }
                     }
 
                     statements.append(&mut self.clear_phi_functions());
