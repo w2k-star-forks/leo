@@ -1,0 +1,26 @@
+[package]
+name = "leo-integration"
+version = "1.5.3"
+authors = [ "The Aleo Team <hello@aleo.org>" ]
+description = "The Leo programming language"
+homepage = "https://aleo.org"
+repository = "https://github.com/AleoHQ/leo"
+keywords = [
+    "aleo",
+    "cryptography",
+    "leo",
+    "programming-language",
+    "zero-knowledge"
+]
+
+[dependencies.leo-lang]
+path = ".."
+version = "1.5.3"
+
+[dependencies.expect-test]
+version = "1.2"
+
+[dependencies.snarkvm]
+git = "https://github.com/AleoHQ/snarkVM.git"
+rev = "84c3e20"
+features = ["circuit", "console", "parallel"]

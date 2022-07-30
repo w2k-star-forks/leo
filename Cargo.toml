@@ -34,6 +34,7 @@ members = [
   "errors",
   "leo/package",
   "tests/test-framework",
+  ".integration"
 ]
 
 [dependencies.leo-ast]
