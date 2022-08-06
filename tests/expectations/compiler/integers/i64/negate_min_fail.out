@@ -2,4 +2,4 @@
 namespace: Compile
 expectation: Fail
 outputs:
-  - "Failed to parse string. Parsing Error: VerboseError { errors: [(\"closure main:\\n    neg 9223372036854775807i64 into r0;\\n    sub r0 1i64 into r1;\\n    neg r1 into r2;\\n    output r2 as i64;\\n\\n\\n\", Nom(Tag)), (\"closure main:\\n    neg 9223372036854775807i64 into r0;\\n    sub r0 1i64 into r1;\\n    neg r1 into r2;\\n    output r2 as i64;\\n\\n\\n\", Nom(Alt)), (\"closure main:\\n    neg 9223372036854775807i64 into r0;\\n    sub r0 1i64 into r1;\\n    neg r1 into r2;\\n    output r2 as i64;\\n\\n\\n\", Nom(Many1))] }"
+  - "Error [ETYC0372032]: A helper function must have inputs.\n    --> compiler-test:3:1\n     |\n   3 | function main() -> i64 {\n   4 |     let a: i64 = -9223372036854775807i64;\n   5 |     let b: i64 = a - 1i64;\n   6 | \n   7 |     return -b; // This line attempts to return 9223372036854775808i64 however, the largest i64 value is 9223372036854775807i64.\n   8 | }\n     | ^\n     |\n     = Consider adding inputs to the function or using an inlined function.\n"
