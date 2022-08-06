@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with the Leo library. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::SymbolTable;
+use crate::{CallType, SymbolTable};
 
 use leo_ast::{Identifier, Node, Type};
 use leo_core::*;
@@ -30,11 +30,9 @@ pub struct TypeChecker<'a> {
     pub(crate) parent: Option<Symbol>,
     pub(crate) has_return: bool,
     pub(crate) negate: bool,
-    /// Are we traversing a program function?
-    /// A "program function" is a function that can be invoked by a user or another program.
-    pub(crate) is_program_function: bool,
-    /// Does this function need to be inlined?
-    pub(crate) is_inlined: bool,
+    /// If we are traversing a function, what is its call type?
+    /// Is it a program function, helper function, or inlined function?
+    pub(crate) call_type: Option<CallType>,
 }
 
 const BOOLEAN_TYPE: Type = Type::Boolean;
@@ -73,8 +71,7 @@ impl<'a> TypeChecker<'a> {
             parent: None,
             has_return: false,
             negate: false,
-            is_program_function: false,
-            is_inlined: false,
+            call_type: None,
         }
     }
 
