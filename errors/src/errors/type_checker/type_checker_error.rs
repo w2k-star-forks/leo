@@ -288,4 +288,11 @@ create_messages!(
         msg: format!("Helper functions cannot have modes associated with their inputs."),
         help: Some("Consider removing the mode or adding a `@program` annotation to the function.".to_string()),
     }
+
+    @formatted
+    program_and_inline_annotation {
+        args: (),
+        msg: format!("A function cannot have both `@program` and `@inline` annotations."),
+        help: Some("Remove one of the annotations.".to_string()),
+    }
 );
