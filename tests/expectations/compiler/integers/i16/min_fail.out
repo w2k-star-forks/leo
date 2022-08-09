@@ -2,4 +2,4 @@
 namespace: Compile
 expectation: Fail
 outputs:
-  - "Error [ETYC0372032]: A helper function must have inputs.\n    --> compiler-test:3:1\n     |\n   3 | function main() -> i16 {\n   4 |     let a: i16 = -32767i16;\n   5 | \n   6 |     return a - 2i16; // This line attempts to return -32769i16 however, the smallest i16 value is -32768i16.\n   7 | }\n     | ^\n     |\n     = Consider adding inputs to the function or using an inlined function.\n"
+  - "Error [ETYC0372031]: A helper function must have inputs.\n    --> compiler-test:3:1\n     |\n   3 | function main() -> i16 {\n   4 |     let a: i16 = -32767i16;\n   5 | \n   6 |     return a - 2i16; // This line attempts to return -32769i16 however, the smallest i16 value is -32768i16.\n   7 | }\n     | ^\n     |\n     = Consider adding inputs to the function or using an inlined function.\n"
