@@ -2,7 +2,8 @@
 namespace: Compile
 expectation: Pass
 outputs:
-  - output:
+  - warnings: ""
+    output:
       - initial_input_ast: deb50c041b424221a0527767410234b8d21a0bbad0a5946bd5e7e1026fb1d15c
       - initial_input_ast: 250243a2f6b5862fc8aaabe181ef12ec6f9e273c384f81c4973f93059e0baaf3
     initial_ast: 92c9907890c6f457783f10cf981af8651cba93a540b245b31418ff604a4510c7
