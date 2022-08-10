@@ -32,7 +32,13 @@ impl<'a> ProgramVisitor<'a> for TypeChecker<'a> {
         input
             .circuits
             .values()
-            .for_each(|function| self.visit_circuit(function));
+            .for_each(|circuit| self.visit_circuit(circuit));
+
+        // TODO: Improve error message to provide a path associated with the cycle.
+        // Check that the type dependency graph does not contain any cycle.
+        if self.type_graph.contains_cycle() {
+            self.emit_err(TypeCheckerError::recursive_type());
+        }
 
         // Visit the functions in the program.
         input
@@ -144,14 +150,23 @@ impl<'a> ProgramVisitor<'a> for TypeChecker<'a> {
     }
 
     fn visit_circuit(&mut self, input: &'a Circuit) {
-        // Check for conflicting circuit/record member names.
+        // The set of members of the circuit.
         let mut used = HashSet::new();
-        if !input.members.iter().all(|member| used.insert(member.name())) {
-            self.emit_err(if input.is_record {
-                TypeCheckerError::duplicate_record_variable(input.name(), input.span())
-            } else {
-                TypeCheckerError::duplicate_circuit_member(input.name(), input.span())
-            });
+
+        for member in input.members.iter() {
+            // Check for conflicting circuit/record member names.
+            if !used.insert(member.name()) {
+                self.emit_err(if input.is_record {
+                    TypeCheckerError::duplicate_record_variable(input.name(), input.span())
+                } else {
+                    TypeCheckerError::duplicate_circuit_member(input.name(), input.span())
+                });
+            }
+
+            // If `member` is a composite type, add it to the type dependency graph.
+            if let CircuitMember::CircuitVariable(_, Type::Identifier(identifier)) = member {
+                self.type_graph.add_edge(input.identifier.name, identifier.name);
+            }
         }
 
         // For records, enforce presence of `owner: Address` and `gates: u64` members.
