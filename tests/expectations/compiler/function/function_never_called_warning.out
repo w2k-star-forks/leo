@@ -5,6 +5,6 @@ outputs:
   - warnings: "Warning [WTYC0372001]: The function `never_called_one` is never called.\n    --> compiler-test:5:1\n     |\n   5 | function never_called_one(a: u8) -> u8 {\n   6 |     return a + 1u8;\n   7 | }\n     | ^\nWarning [WTYC0372001]: The function `never_called_two` is never called.\n    --> compiler-test:10:1\n     |\n  10 | function never_called_two(b: u8) -> u8 {\n  11 |     return b + 1u8;\n  12 | }\n     | ^"
     output:
       - initial_input_ast: 7659f9649c5f833934f31913b94c0aa34cfdb225b3a137ae975e9d998ce0fbfe
-    initial_ast: 2d5b5804d57ebb7db4e03bc360c7b692614a8720a310001223f5ee891f3bb800
-    unrolled_ast: 2d5b5804d57ebb7db4e03bc360c7b692614a8720a310001223f5ee891f3bb800
-    ssa_ast: 62655889e6610b1ef246dc064a18257a7154ef02dc83f2cfc86f5617570a1dd3
+    initial_ast: 117f3e34fb08ea13a42ac81e48314711c5e8355750dbb3c81a02ece37bbda44c
+    unrolled_ast: 117f3e34fb08ea13a42ac81e48314711c5e8355750dbb3c81a02ece37bbda44c
+    ssa_ast: 53f86ba97bd749f8f92756ea43a2d0ab800da7f377dee9929458cbe96fe89663
