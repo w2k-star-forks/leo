@@ -2,7 +2,7 @@
 namespace: Compile
 expectation: Pass
 outputs:
-  - warnings: "Warning [WTYC0372001]: The function `signed` is never called.\n    --> compiler-test:12:1\n     |\n  12 | function signed(a: i8, b: u8, c: u16, d: u32) -> i8 {\n  13 |     a <<= b;\n  14 |     a <<= c;\n  15 |     a <<= d;\n  16 | \n  17 |     return a;\n  18 | }\n     | ^"
+  - warnings: "Warning [WTYC0372001]: The function `signed` is never called by a program function.\n    --> compiler-test:12:1\n     |\n  12 | function signed(a: i8, b: u8, c: u16, d: u32) -> i8 {\n  13 |     a <<= b;\n  14 |     a <<= c;\n  15 |     a <<= d;\n  16 | \n  17 |     return a;\n  18 | }\n     | ^"
     output:
       - initial_input_ast: no input
     initial_ast: d5bcd57f2a3b53929d2f775c72bcbd0c47a0c4e5c4d35d3f9e208cfd28eb02a8

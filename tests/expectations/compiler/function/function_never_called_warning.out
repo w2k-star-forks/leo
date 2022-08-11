@@ -2,7 +2,7 @@
 namespace: Compile
 expectation: Pass
 outputs:
-  - warnings: "Warning [WTYC0372001]: The function `never_called_one` is never called.\n    --> compiler-test:5:1\n     |\n   5 | function never_called_one(a: u8) -> u8 {\n   6 |     return a + 1u8;\n   7 | }\n     | ^\nWarning [WTYC0372001]: The function `never_called_two` is never called.\n    --> compiler-test:10:1\n     |\n  10 | function never_called_two(b: u8) -> u8 {\n  11 |     return b + 1u8;\n  12 | }\n     | ^"
+  - warnings: "Warning [WTYC0372001]: The function `never_called_one` is never called by a program function.\n    --> compiler-test:5:1\n     |\n   5 | function never_called_one(a: u8) -> u8 {\n   6 |     return a + 1u8;\n   7 | }\n     | ^\nWarning [WTYC0372001]: The function `never_called_two` is never called by a program function.\n    --> compiler-test:10:1\n     |\n  10 | function never_called_two(b: u8) -> u8 {\n  11 |     return b + 1u8;\n  12 | }\n     | ^"
     output:
       - initial_input_ast: 7659f9649c5f833934f31913b94c0aa34cfdb225b3a137ae975e9d998ce0fbfe
     initial_ast: 117f3e34fb08ea13a42ac81e48314711c5e8355750dbb3c81a02ece37bbda44c

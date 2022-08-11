@@ -2,7 +2,7 @@
 namespace: Compile
 expectation: Pass
 outputs:
-  - warnings: "Warning [WTYC0372000]: Unknown annotation: `@invalid_annotation`.\n    --> compiler-test:5:1\n     |\n   5 | @invalid_annotation\n     | ^^^^^^^^^^^^^^^^^^^\n     |\n     = Use a valid annotation. The Leo compiler supports: `@inline` and `@program`\nWarning [WTYC0372001]: The function `main` is never called.\n    --> compiler-test:6:1\n     |\n   6 | function main(a: u32) -> u32 {\n   7 |     if a == 2u32 {\n   8 |         return 3u32;\n   9 |     } else {\n  10 |         return 4u32;\n  11 |     } \n  12 | }\n     | ^"
+  - warnings: "Warning [WTYC0372000]: Unknown annotation: `@invalid_annotation`.\n    --> compiler-test:5:1\n     |\n   5 | @invalid_annotation\n     | ^^^^^^^^^^^^^^^^^^^\n     |\n     = Use a valid annotation. The Leo compiler supports: `@inline` and `@program`\nWarning [WTYC0372001]: The function `main` is never called by a program function.\n    --> compiler-test:6:1\n     |\n   6 | function main(a: u32) -> u32 {\n   7 |     if a == 2u32 {\n   8 |         return 3u32;\n   9 |     } else {\n  10 |         return 4u32;\n  11 |     } \n  12 | }\n     | ^"
     output:
       - initial_input_ast: 59669f4648b5fc42242c60fb70f5ee6c42c9bd9e2cac19befe38035c1e42aeb2
     initial_ast: 4d2cb13f9b19d1b267d78ddc8862fe85d5b53f47e15b0df42a367cba0b3c1e98
